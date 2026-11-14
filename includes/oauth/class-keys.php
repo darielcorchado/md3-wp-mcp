@@ -103,17 +103,43 @@ final class Keys {
 	/**
 	 * Reads a key option, generating and storing it (autoload off) when missing.
 	 *
+	 * Concurrent first requests must converge on one key. `add_option` would
+	 * overwrite a key another request just stored (INSERT … ON DUPLICATE KEY
+	 * UPDATE) and cache its own, so the key is inserted only if absent and the
+	 * stored winner is read back from the database.
+	 *
 	 * @param callable(): string $generate Key generator.
+	 * @throws \RuntimeException When no key could be stored.
 	 */
 	private static function stored( string $option, callable $generate ): string {
+		global $wpdb;
+
 		$value = get_option( $option, '' );
 		if ( is_string( $value ) && '' !== $value ) {
 			return $value;
 		}
 
-		add_option( $option, $generate(), '', false );
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'off')",
+				$option,
+				$generate()
+			)
+		);
 
-		return (string) get_option( $option, '' );
+		wp_cache_delete( $option, 'options' );
+		$notoptions = wp_cache_get( 'notoptions', 'options' );
+		if ( is_array( $notoptions ) && isset( $notoptions[ $option ] ) ) {
+			unset( $notoptions[ $option ] );
+			wp_cache_set( 'notoptions', $notoptions, 'options' );
+		}
+
+		$stored = (string) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $option ) );
+		if ( '' === $stored ) {
+			throw new \RuntimeException( 'MD3 WP MCP: could not store the OAuth keys.' );
+		}
+
+		return $stored;
 	}
 
 	private static function constant( string $name ): string {

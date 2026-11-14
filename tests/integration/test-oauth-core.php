@@ -142,6 +142,38 @@ class Test_Oauth_Core extends Test_Case {
 		}
 	}
 
+	/**
+	 * Two first requests race: this one saw the options missing (cached in
+	 * `notoptions`) while another request stored its keys. This request must
+	 * adopt the stored keys, not overwrite them with its own.
+	 */
+	public function test_concurrent_key_generation_converges_on_stored_keys() {
+		global $wpdb;
+		delete_option( Keys::OPT_PRIVATE );
+		delete_option( Keys::OPT_ENCRYPTION );
+		$this->assertSame( '', get_option( Keys::OPT_PRIVATE, '' ) );
+		$this->assertSame( '', get_option( Keys::OPT_ENCRYPTION, '' ) );
+
+		// The other request's keys, written straight to the table (this request's cache doesn't know).
+		openssl_pkey_export( openssl_pkey_new( [ 'private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA ] ), $winner_pem );
+		$winner_encryption = \Defuse\Crypto\Key::createNewRandomKey()->saveToAsciiSafeString();
+		foreach ( [ Keys::OPT_PRIVATE => $winner_pem, Keys::OPT_ENCRYPTION => $winner_encryption ] as $name => $value ) {
+			$wpdb->insert( $wpdb->options, [ 'option_name' => $name, 'option_value' => $value, 'autoload' => 'off' ] );
+		}
+
+		$keys = Keys::get();
+
+		$this->assertSame( $winner_pem, $keys['private']->getKeyContents() );
+		$this->assertSame( $winner_encryption, $keys['encryption'] );
+		$this->assertSame( $winner_pem, $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", Keys::OPT_PRIVATE ) ) );
+		$this->assertSame( $winner_encryption, $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", Keys::OPT_ENCRYPTION ) ) );
+
+		// Later reads in this request agree too.
+		$again = Keys::get();
+		$this->assertSame( $winner_pem, $again['private']->getKeyContents() );
+		$this->assertSame( $winner_encryption, $again['encryption'] );
+	}
+
 	public function test_rotate_replaces_keys_and_revokes_everything() {
 		$user_id = $this->make_mcp_user();
 		$client  = $this->insert_client();
