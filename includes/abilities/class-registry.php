@@ -12,7 +12,7 @@ final class Registry {
 	 * @return Ability[]
 	 */
 	public static function abilities(): array {
-		return [
+		$abilities = [
 			new List_Post_Types(),
 			new List_Content(),
 			new Get_Content(),
@@ -24,7 +24,16 @@ final class Registry {
 			new Unpublish_Content(),
 			new Trash_Content(),
 			new Restore_Content(),
+			new Upload_Media(),
+			new Set_Featured_Image(),
 		];
+
+		// Translation linking only makes sense when Polylang is active.
+		if ( function_exists( 'pll_set_post_language' ) ) {
+			$abilities[] = new Link_Translations();
+		}
+
+		return $abilities;
 	}
 
 	/**

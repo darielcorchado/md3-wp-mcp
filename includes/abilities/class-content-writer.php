@@ -150,7 +150,7 @@ final class Content_Writer {
 		}
 
 		if ( ! empty( $input['featured_media'] ) ) {
-			if ( ! wp_attachment_is_image( (int) $input['featured_media'] ) ) {
+			if ( ! self::is_image_attachment( (int) $input['featured_media'] ) ) {
 				return self::error( 'md3_mcp_bad_media', __( 'featured_media must be the ID of an image in the media library.', 'md3-wp-mcp' ) );
 			}
 		}
@@ -187,6 +187,13 @@ final class Content_Writer {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Whether the ID is an image in the media library.
+	 */
+	public static function is_image_attachment( int $id ): bool {
+		return $id > 0 && wp_attachment_is_image( $id );
 	}
 
 	private static function error( string $code, string $message, int $status = 400 ): \WP_Error {
