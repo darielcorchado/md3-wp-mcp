@@ -39,4 +39,11 @@ final class Plugin {
 		wp_clear_scheduled_hook( self::CLEANUP_HOOK );
 		flush_rewrite_rules();
 	}
+
+	/**
+	 * Salted hash of the client IP, for rate limiting and the audit log.
+	 */
+	public static function client_ip_hash(): string {
+		return hash( 'sha256', wp_salt( 'auth' ) . ( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+	}
 }
