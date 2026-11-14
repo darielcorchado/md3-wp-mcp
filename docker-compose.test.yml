@@ -1,0 +1,17 @@
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress_test
+    tmpfs:
+      - /var/lib/mysql
+  php:
+    image: wordpress:cli-php8.2
+    user: "0"
+    entrypoint: []
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      - db
