@@ -113,11 +113,17 @@ final class Content_Writer {
 			update_post_meta( $id, self::SEO_META[ $key ], wp_slash( Content_Sanitizer::plain( (string) $value ) ) );
 		}
 
-		// Never email subscribers about MCP-written content (Brevo opt-out).
-		update_post_meta( $id, 'sib_push_meta_box_present', 1 );
-		update_post_meta( $id, 'sib_push_send_notification', '0' );
+		self::disable_subscriber_notification( $id );
 
 		return $id;
+	}
+
+	/**
+	 * Never email subscribers about MCP-written content (Brevo opt-out).
+	 */
+	public static function disable_subscriber_notification( int $id ): void {
+		update_post_meta( $id, 'sib_push_meta_box_present', 1 );
+		update_post_meta( $id, 'sib_push_send_notification', '0' );
 	}
 
 	/**

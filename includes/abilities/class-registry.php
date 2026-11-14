@@ -20,6 +20,10 @@ final class Registry {
 			new Create_Content(),
 			new Update_Content(),
 			new Create_Term(),
+			new Publish_Content(),
+			new Unpublish_Content(),
+			new Trash_Content(),
+			new Restore_Content(),
 		];
 	}
 
