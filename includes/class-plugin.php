@@ -17,6 +17,8 @@ final class Plugin {
 		if ( get_option( 'md3_wp_mcp_db_version' ) !== Schema::DB_VERSION ) {
 			Schema::install();
 		}
+
+		Abilities\Registry::register();
 	}
 
 	/**
