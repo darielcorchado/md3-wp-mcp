@@ -125,4 +125,78 @@ class Test_Lifecycle_Abilities extends Test_Case {
 			$this->assertSame( 'md3_mcp_not_found', $this->run_ability( $name, [ 'id' => 999999 ] )->get_error_code() );
 		}
 	}
+
+	public function test_malformed_or_lenient_dates_are_rejected() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		foreach ( [ '0000-00-00', '0000-00-00 00:00', '2020-02-31 10:00', '2020-13-01 10:00', '2020-01-01 25:00', 'tomorrow', '+1 week', '@123', '   ', '1969-12-31 10:00', '2020-01-01' ] as $bad ) {
+			$r = $this->run_ability( 'publish-content', [ 'id' => $id, 'date' => $bad ] );
+			$this->assertWPError( $r, $bad );
+			$this->assertSame( 'md3_mcp_bad_date', $r->get_error_code(), $bad );
+		}
+		$this->assertSame( 'draft', get_post( $id )->post_status );
+	}
+
+	public function test_far_future_date_is_scheduled() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		$this->run_ability( 'publish-content', [ 'id' => $id, 'date' => '9999-12-31 23:59' ] );
+		$this->assertSame( 'future', get_post( $id )->post_status );
+	}
+
+	public function test_iso_forms_with_z_seconds_and_compact_offset_are_accepted() {
+		update_option( 'timezone_string', 'America/New_York' );
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		foreach ( [ '2099-12-01T09:00:00Z' => '2099-12-01 09:00:00', '2099-12-01 09:00:30' => '2099-12-01 14:00:30', '2099-12-01T09:00+0100' => '2099-12-01 08:00:00' ] as $in => $gmt ) {
+			$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+			$this->assertNotWPError( $this->run_ability( 'publish-content', [ 'id' => $id, 'date' => $in ] ), $in );
+			$this->assertSame( $gmt, get_post( $id )->post_date_gmt, $in );
+		}
+	}
+
+	public function test_dst_edge_times_in_site_timezone() {
+		update_option( 'timezone_string', 'America/New_York' );
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		// Pinned PHP behaviour: a nonexistent local time (spring forward) is
+		// moved forward an hour (02:30 -> 03:30 EDT = 07:30 UTC); an ambiguous one (fall back)
+		// resolves to the first occurrence, EDT (01:30 -> 05:30 UTC).
+		foreach ( [ '2027-03-14 02:30' => '2027-03-14 07:30:00', '2027-11-07 01:30' => '2027-11-07 05:30:00' ] as $in => $gmt ) {
+			$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+			$this->assertNotWPError( $this->run_ability( 'publish-content', [ 'id' => $id, 'date' => $in ] ), $in );
+			$this->assertSame( $gmt, get_post( $id )->post_date_gmt, $in );
+		}
+	}
+
+	public function test_trash_refuses_when_trash_is_disabled() {
+		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:delete' ] );
+		add_filter( 'md3_mcp_trash_enabled', '__return_false' );
+		$r = $this->run_ability( 'trash-content', [ 'id' => $id ] );
+		remove_filter( 'md3_mcp_trash_enabled', '__return_false' );
+		$this->assertSame( 'md3_mcp_trash_disabled', $r->get_error_code() );
+		$this->assertNotNull( get_post( $id ) );
+		$this->assertSame( 'publish', get_post( $id )->post_status );
+	}
+
+	public function test_lifecycle_refuses_disallowed_type_attachment_and_unauthorized_user() {
+		register_post_type( 'md3_secret', [ 'public' => true ] );
+		$secret = self::factory()->post->create( [ 'post_type' => 'md3_secret', 'post_status' => 'trash' ] );
+		$attach = self::factory()->attachment->create( [ 'post_status' => 'inherit' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:publish', 'content:delete' ] );
+		foreach ( [ 'publish-content', 'unpublish-content', 'trash-content', 'restore-content' ] as $name ) {
+			$this->assertSame( 'md3_mcp_type_not_allowed', $this->run_ability( $name, [ 'id' => $secret ] )->get_error_code(), $name );
+			$this->assertSame( 'md3_mcp_not_found', $this->run_ability( $name, [ 'id' => $attach ] )->get_error_code(), $name );
+		}
+		$this->assertSame( 'trash', get_post( $secret )->post_status );
+		unregister_post_type( 'md3_secret' );
+
+		$other = self::factory()->post->create( [ 'post_status' => 'publish', 'post_author' => self::factory()->user->create( [ 'role' => 'editor' ] ) ] );
+		$trashed = self::factory()->post->create( [ 'post_status' => 'trash', 'post_author' => get_post( $other )->post_author ] );
+		$this->as_mcp_user( [ 'content:read', 'content:publish', 'content:delete' ], 'author' );
+		$this->assertSame( 'md3_mcp_forbidden', $this->run_ability( 'trash-content', [ 'id' => $other ] )->get_error_code() );
+		$this->assertSame( 'md3_mcp_forbidden', $this->run_ability( 'restore-content', [ 'id' => $trashed ] )->get_error_code() );
+		$this->assertSame( 'md3_mcp_forbidden', $this->run_ability( 'unpublish-content', [ 'id' => $other ] )->get_error_code() );
+		$this->assertSame( 'publish', get_post( $other )->post_status );
+		$this->assertSame( 'trash', get_post( $trashed )->post_status );
+	}
 }

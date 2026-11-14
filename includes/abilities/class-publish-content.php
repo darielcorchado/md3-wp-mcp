@@ -63,7 +63,7 @@ final class Publish_Content extends Ability {
 		$now  = new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) );
 		$date = $now;
 		if ( isset( $input['date'] ) && '' !== $input['date'] ) {
-			$date = date_create_immutable( (string) $input['date'], wp_timezone() );
+			$date = self::parse_date( (string) $input['date'] );
 			if ( ! $date ) {
 				return new \WP_Error( 'md3_mcp_bad_date', __( 'date must be ISO 8601 or "Y-m-d H:i".', 'md3-wp-mcp' ), [ 'status' => 400 ] );
 			}
@@ -87,5 +87,41 @@ final class Publish_Content extends Ability {
 		Content_Writer::disable_subscriber_notification( $post->ID );
 
 		return Content_Formatter::summary( get_post( $post->ID ) );
+	}
+
+	/**
+	 * Strict date parser: ISO 8601 ("T" or space, optional seconds, optional
+	 * Z or offset) or "Y-m-d H:i". No relative words, no calendar overflow.
+	 * Without an offset the site time zone applies.
+	 */
+	private static function parse_date( string $value ): ?\DateTimeImmutable {
+		$pattern = '/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(Z|[+-]\d{2}(?::?\d{2})?)?$/';
+		if ( ! preg_match( $pattern, trim( $value ), $m ) ) {
+			return null;
+		}
+		$year = (int) $m[1];
+		$sec  = isset( $m[6] ) && '' !== $m[6] ? (int) $m[6] : 0;
+		if ( $year < 1970 || ! checkdate( (int) $m[2], (int) $m[3], $year ) || (int) $m[4] > 23 || (int) $m[5] > 59 || $sec > 59 ) {
+			return null;
+		}
+
+		$zone = wp_timezone();
+		if ( isset( $m[7] ) && '' !== $m[7] ) {
+			if ( 'Z' === $m[7] ) {
+				$offset = '+00:00';
+			} else {
+				$digits = preg_replace( '/\D/', '', $m[7] );
+				$hours  = (int) substr( $digits, 0, 2 );
+				$mins   = (int) substr( $digits, 2, 2 );
+				if ( $hours > 14 || $mins > 59 ) {
+					return null;
+				}
+				$offset = $m[7][0] . sprintf( '%02d:%02d', $hours, $mins );
+			}
+			$zone = new \DateTimeZone( $offset );
+		}
+
+		$date = \DateTimeImmutable::createFromFormat( 'Y-m-d H:i:s', sprintf( '%04d-%02d-%02d %02d:%02d:%02d', $year, $m[2], $m[3], $m[4], $m[5], $sec ), $zone );
+		return $date ?: null;
 	}
 }

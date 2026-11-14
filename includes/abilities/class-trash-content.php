@@ -56,6 +56,11 @@ final class Trash_Content extends Ability {
 			return new \WP_Error( 'md3_mcp_trashed', __( 'This content is already in the trash.', 'md3-wp-mcp' ), [ 'status' => 409 ] );
 		}
 
+		// With the trash disabled core's wp_trash_post() deletes permanently.
+		if ( ! apply_filters( 'md3_mcp_trash_enabled', defined( 'EMPTY_TRASH_DAYS' ) ? EMPTY_TRASH_DAYS > 0 : true ) ) {
+			return new \WP_Error( 'md3_mcp_trash_disabled', __( 'The trash is disabled on this site, so content cannot be trashed safely.', 'md3-wp-mcp' ), [ 'status' => 409 ] );
+		}
+
 		if ( ! wp_trash_post( $post->ID ) ) {
 			return new \WP_Error( 'md3_mcp_trash_failed', __( 'The content could not be moved to the trash.', 'md3-wp-mcp' ), [ 'status' => 500 ] );
 		}

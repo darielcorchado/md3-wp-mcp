@@ -16,7 +16,7 @@ final class Unpublish_Content extends Ability {
 	}
 
 	public function description(): string {
-		return __( 'Moves published or scheduled content back to draft.', 'md3-wp-mcp' );
+		return __( 'Moves content back to draft (published, scheduled, pending or private).', 'md3-wp-mcp' );
 	}
 
 	public function scope(): string {
