@@ -22,6 +22,8 @@ final class Plugin {
 
 		Mcp\Server::hook();
 		\WP\MCP\Core\McpAdapter::instance();
+
+		OAuth\OAuth::boot();
 	}
 
 	/**
