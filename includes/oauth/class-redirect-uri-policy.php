@@ -48,6 +48,48 @@ final class Redirect_Uri_Policy {
 	}
 
 	/**
+	 * Whether a requested redirect URI matches one of the client's registered
+	 * URIs: exactly, or, for an `http` loopback URI, with any port (RFC 8252
+	 * §7.3). Scheme, host, path and query must still match.
+	 *
+	 * @param string[] $registered Registered redirect URIs.
+	 */
+	public static function matches( string $uri, array $registered ): bool {
+		if ( in_array( $uri, $registered, true ) ) {
+			return true;
+		}
+
+		$loopback = self::without_port( $uri );
+		if ( null === $loopback ) {
+			return false;
+		}
+
+		foreach ( $registered as $candidate ) {
+			if ( is_string( $candidate ) && self::without_port( $candidate ) === $loopback ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * An `http` loopback URI without its port, or null for any other URI.
+	 */
+	private static function without_port( string $uri ): ?string {
+		if ( ! self::allowed( $uri ) ) {
+			return null;
+		}
+
+		$parts = wp_parse_url( $uri );
+		if ( 'http' !== strtolower( $parts['scheme'] ?? '' ) || ! in_array( strtolower( $parts['host'] ?? '' ), self::LOOPBACK_HOSTS, true ) ) {
+			return null;
+		}
+
+		return 'http://' . strtolower( $parts['host'] ) . ( $parts['path'] ?? '' ) . ( isset( $parts['query'] ) ? '?' . $parts['query'] : '' );
+	}
+
+	/**
 	 * A host name with a dot that isn't a local name, or a public IP literal.
 	 * No DNS lookup: the redirect happens in the user's browser.
 	 */

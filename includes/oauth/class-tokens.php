@@ -31,6 +31,48 @@ final class Tokens {
 	}
 
 	/**
+	 * Revokes one access token of a client, and the refresh token issued with
+	 * it (RFC 7009). Not a rotation: `rotated_at` stays empty, so a later
+	 * replay of the refresh token isn't taken for theft.
+	 *
+	 * @param string $access_hash SHA-256 of the access token's `jti`.
+	 * @return int Tokens newly revoked.
+	 */
+	public static function revoke_by_access_hash( string $access_hash, string $client_id ): int {
+		global $wpdb;
+		$count  = (int) $wpdb->query(
+			$wpdb->prepare( 'UPDATE ' . Schema::table( 'access_tokens' ) . ' SET revoked = 1 WHERE id_hash = %s AND client_id = %s AND revoked = 0', $access_hash, $client_id )
+		);
+		$count += (int) $wpdb->query(
+			$wpdb->prepare( 'UPDATE ' . Schema::table( 'refresh_tokens' ) . ' SET revoked = 1 WHERE access_token_hash = %s AND client_id = %s AND revoked = 0', $access_hash, $client_id )
+		);
+		return $count;
+	}
+
+	/**
+	 * Revokes one refresh token of a client, and the access token it was
+	 * issued with (RFC 7009). Not a rotation (see revoke_by_access_hash()).
+	 *
+	 * @param string $refresh_hash SHA-256 of the refresh token's ID.
+	 * @return int Tokens newly revoked.
+	 */
+	public static function revoke_by_refresh_hash( string $refresh_hash, string $client_id ): int {
+		global $wpdb;
+		$refresh = Schema::table( 'refresh_tokens' );
+
+		$access_hash = $wpdb->get_var( $wpdb->prepare( "SELECT access_token_hash FROM {$refresh} WHERE id_hash = %s AND client_id = %s", $refresh_hash, $client_id ) );
+		if ( null === $access_hash ) {
+			return 0;
+		}
+
+		$count  = (int) $wpdb->query( $wpdb->prepare( "UPDATE {$refresh} SET revoked = 1 WHERE id_hash = %s AND revoked = 0", $refresh_hash ) );
+		$count += (int) $wpdb->query(
+			$wpdb->prepare( 'UPDATE ' . Schema::table( 'access_tokens' ) . ' SET revoked = 1 WHERE id_hash = %s AND client_id = %s AND revoked = 0', $access_hash, $client_id )
+		);
+		return $count;
+	}
+
+	/**
 	 * Connections with a live access or refresh token, newest first.
 	 *
 	 * Scopes come from the connection's latest access token; `created_at` is

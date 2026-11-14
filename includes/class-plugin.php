@@ -27,7 +27,8 @@ final class Plugin {
 	}
 
 	/**
-	 * Creates tables, schedules the daily cleanup and flushes rewrite rules.
+	 * Creates tables, schedules the daily cleanup and flushes rewrite rules
+	 * with the authorize page's rule in them.
 	 */
 	public static function activate(): void {
 		Schema::install();
@@ -36,6 +37,7 @@ final class Plugin {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::CLEANUP_HOOK );
 		}
 
+		OAuth\Authorize::add_rewrite_rule();
 		flush_rewrite_rules();
 	}
 

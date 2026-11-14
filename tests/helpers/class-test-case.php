@@ -3,6 +3,7 @@ namespace MD3\WPMCP\Tests;
 
 use MD3\WPMCP\Auth\Identity;
 use MD3\WPMCP\Auth\Request_Context;
+use MD3\WPMCP\OAuth\Authorize;
 use MD3\WPMCP\Settings;
 use WP_UnitTestCase;
 
@@ -42,6 +43,72 @@ abstract class Test_Case extends WP_UnitTestCase {
 		Request_Context::set( new Identity( $user_id, 'test-client', $scopes, str_repeat( 'a', 64 ) ) );
 
 		return $user_id;
+	}
+
+	/**
+	 * Runs the real OAuth flow and returns its tokens: register a DCR client,
+	 * validate the authorize request, approve it as the MCP user (created as
+	 * an Editor when none is configured), then exchange the code with the
+	 * PKCE verifier at the token endpoint.
+	 *
+	 * @param string[] $scopes Scopes to request and approve.
+	 * @return array{access_token: string, refresh_token: string, client_id: string}
+	 */
+	protected function issue_token( array $scopes = [ 'content:read', 'content:write' ] ): array {
+		$user_id = Settings::mcp_user_id();
+		if ( 0 === $user_id ) {
+			$user_id                 = (int) self::factory()->user->create( [ 'role' => 'editor' ] );
+			$security                = Settings::security();
+			$security['mcp_user_id'] = $user_id;
+			update_option( Settings::OPT_SECURITY, $security );
+		}
+
+		$redirect_uri = 'https://claude.ai/api/mcp/auth_callback';
+		$verifier     = wp_generate_password( 64, false );
+
+		$register = new \WP_REST_Request( 'POST', '/md3-wp-mcp/v1/oauth/register' );
+		$register->set_header( 'Content-Type', 'application/json' );
+		$register->set_body( wp_json_encode( [ 'client_name' => 'phpunit', 'redirect_uris' => [ $redirect_uri ] ] ) );
+		$registered = rest_get_server()->dispatch( $register );
+		$this->assertSame( 201, $registered->get_status(), 'client registration' );
+		$client_id = $registered->get_data()['client_id'];
+
+		$query = [
+			'response_type'         => 'code',
+			'client_id'             => $client_id,
+			'redirect_uri'          => $redirect_uri,
+			'scope'                 => implode( ' ', $scopes ),
+			'state'                 => 'phpunit',
+			'code_challenge'        => rtrim( strtr( base64_encode( hash( 'sha256', $verifier, true ) ), '+/', '-_' ), '=' ),
+			'code_challenge_method' => 'S256',
+		];
+		$this->assertNotWPError( Authorize::validate( $query ), 'authorize request' );
+
+		$redirect = Authorize::complete( $query, $user_id, $scopes, true );
+		$this->assertIsString( $redirect, 'authorize completion' );
+		parse_str( (string) wp_parse_url( $redirect, PHP_URL_QUERY ), $params );
+		$this->assertArrayHasKey( 'code', $params, 'authorization code' );
+
+		$token = new \WP_REST_Request( 'POST', '/md3-wp-mcp/v1/oauth/token' );
+		$token->set_header( 'Content-Type', 'application/x-www-form-urlencoded' );
+		$token->set_body_params(
+			[
+				'grant_type'    => 'authorization_code',
+				'client_id'     => $client_id,
+				'code'          => $params['code'],
+				'redirect_uri'  => $redirect_uri,
+				'code_verifier' => $verifier,
+			]
+		);
+		$response = rest_get_server()->dispatch( $token );
+		$this->assertSame( 200, $response->get_status(), 'token exchange' );
+		$data = $response->get_data();
+
+		return [
+			'access_token'  => $data['access_token'],
+			'refresh_token' => $data['refresh_token'],
+			'client_id'     => $client_id,
+		];
 	}
 
 	/**
