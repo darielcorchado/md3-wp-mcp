@@ -19,6 +19,9 @@ final class Plugin {
 		}
 
 		Abilities\Registry::register();
+
+		Mcp\Server::hook();
+		\WP\MCP\Core\McpAdapter::instance();
 	}
 
 	/**
