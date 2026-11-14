@@ -17,6 +17,9 @@ final class Registry {
 			new List_Content(),
 			new Get_Content(),
 			new List_Terms(),
+			new Create_Content(),
+			new Update_Content(),
+			new Create_Term(),
 		];
 	}
 
