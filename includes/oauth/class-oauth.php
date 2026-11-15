@@ -60,6 +60,7 @@ final class OAuth {
 		add_action( 'parse_request', [ Discovery::class, 'maybe_serve' ], 0 );
 		add_action( 'parse_request', [ Discovery::class, 'maybe_serve_bare' ], 99 );
 		add_action( 'rest_api_init', [ self::class, 'register_routes' ] );
+		Bearer_Guard::register();
 		add_filter( 'rest_pre_serve_request', [ self::class, 'send_cors_headers' ], 11, 3 );
 	}
 

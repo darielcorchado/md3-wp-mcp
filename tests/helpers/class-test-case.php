@@ -15,9 +15,25 @@ abstract class Test_Case extends WP_UnitTestCase {
 	/** @var array<string,string> Mcp-Session-Id per route. */
 	private array $mcp_sessions = [];
 
+	/** @var int Source of distinct client IPs for issue_token() registrations. */
+	private static int $token_ip_counter = 0;
+
+	/** @var string|null REMOTE_ADDR before the test; null when it was unset. */
+	private ?string $remote_addr_backup = null;
+
+	public function set_up() {
+		parent::set_up();
+		$this->remote_addr_backup = $_SERVER['REMOTE_ADDR'] ?? null;
+	}
+
 	public function tear_down() {
 		$this->mcp_sessions = [];
 		Request_Context::clear();
+		if ( null === $this->remote_addr_backup ) {
+			unset( $_SERVER['REMOTE_ADDR'] );
+		} else {
+			$_SERVER['REMOTE_ADDR'] = $this->remote_addr_backup;
+		}
 		parent::tear_down();
 	}
 
@@ -66,6 +82,10 @@ abstract class Test_Case extends WP_UnitTestCase {
 		$redirect_uri = 'https://claude.ai/api/mcp/auth_callback';
 		$verifier     = wp_generate_password( 64, false );
 
+		// Each registration comes from a new IP, so tests that issue many
+		// tokens stay under the registration rate limit (10 per IP per hour).
+		$_SERVER['REMOTE_ADDR'] = '2001:db8:7::' . dechex( ++self::$token_ip_counter );
+
 		$register = new \WP_REST_Request( 'POST', '/md3-wp-mcp/v1/oauth/register' );
 		$register->set_header( 'Content-Type', 'application/json' );
 		$register->set_body( wp_json_encode( [ 'client_name' => 'phpunit', 'redirect_uris' => [ $redirect_uri ] ] ) );
@@ -109,6 +129,46 @@ abstract class Test_Case extends WP_UnitTestCase {
 			'refresh_token' => $data['refresh_token'],
 			'client_id'     => $client_id,
 		];
+	}
+
+	/**
+	 * Serves a REST request the way WP_REST_Server::serve_request() does for
+	 * a real HTTP request: the current user is determined afresh (as on
+	 * WP::init()), then authentication errors, dispatch, error conversion
+	 * and `rest_post_dispatch`. Set the Authorization header in $_SERVER first.
+	 *
+	 * @param string|null $request_uri REQUEST_URI to serve under (its query string becomes $_GET);
+	 *                                 defaults to the route's URL.
+	 */
+	protected function serve( \WP_REST_Request $request, ?string $request_uri = null ): \WP_REST_Response {
+		$server = rest_get_server();
+
+		if ( null === $request_uri ) {
+			$url         = rest_url( ltrim( $request->get_route(), '/' ) );
+			$query       = (string) wp_parse_url( $url, PHP_URL_QUERY );
+			$request_uri = (string) wp_parse_url( $url, PHP_URL_PATH ) . ( '' !== $query ? '?' . $query : '' );
+		}
+		$_SERVER['REQUEST_URI']    = $request_uri;
+		$_SERVER['REQUEST_METHOD'] = $request->get_method();
+		parse_str( (string) wp_parse_url( $request_uri, PHP_URL_QUERY ), $_GET );
+
+		$GLOBALS['current_user'] = null;
+		wp_get_current_user();
+
+		$result = $server->check_authentication();
+		if ( ! is_wp_error( $result ) ) {
+			$result = $server->dispatch( $request );
+		}
+		$result = rest_ensure_response( $result );
+		if ( is_wp_error( $result ) ) {
+			$result = rest_convert_error_to_response( $result );
+		}
+		$result = apply_filters( 'rest_post_dispatch', rest_ensure_response( $result ), $server, $request );
+
+		// Normalize nested objects so tests can read the payload as arrays.
+		$result->set_data( json_decode( wp_json_encode( $result->get_data() ), true ) );
+
+		return $result;
 	}
 
 	/**

@@ -77,6 +77,14 @@ final class Discovery {
 	}
 
 	/**
+	 * URL of the protected resource metadata for the MCP endpoint (the
+	 * `resource_metadata` of a `WWW-Authenticate` challenge).
+	 */
+	public static function protected_resource_url(): string {
+		return home_url( '/.well-known/oauth-protected-resource' . self::relative_path( OAuth::resource_url() ) );
+	}
+
+	/**
 	 * The bare protected resource path, served only if nothing else answered
 	 * it first (another plugin may own it).
 	 */

@@ -67,6 +67,7 @@ abstract class Ability {
 	 */
 	public function check_permission( ?array $input ): bool|\WP_Error {
 		if ( ! Request_Context::has_scope( $this->scope() ) ) {
+			Request_Context::deny_scope( $this->scope() );
 			return new \WP_Error(
 				'md3_mcp_insufficient_scope',
 				__( 'The access token does not grant the scope this tool needs.', 'md3-wp-mcp' ),
