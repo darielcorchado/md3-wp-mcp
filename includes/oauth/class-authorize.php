@@ -160,8 +160,9 @@ final class Authorize {
 	 *
 	 * @param array<string,mixed> $query           Authorize query parameters.
 	 * @param string[]            $approved_scopes Scopes the user left checked.
-	 * @return string|\WP_Error Redirect URL, or the validation error when the
-	 *         request is no longer valid (for example the client was removed).
+	 * @return string|\WP_Error Redirect URL; the validation error when the
+	 *         request is no longer valid (for example the client was removed);
+	 *         or a 500 `server_error` when no redirect could be built.
 	 */
 	public static function complete( array $query, int $user_id, array $approved_scopes, bool $approved ) {
 		$auth = self::validate( $query );
@@ -182,14 +183,25 @@ final class Authorize {
 		} catch ( OAuthServerException $e ) {
 			$response = $e->generateHttpResponse( new Response() );
 		} catch ( \Throwable $e ) {
-			return new \WP_Error( 'server_error', __( 'The authorization could not be completed.', 'md3-wp-mcp' ), [ 'status' => 500 ] );
+			return self::server_error();
 		}
 
-		if ( $approved ) {
+		// A server error (the code could not be stored…) has no redirect.
+		$location = $response->getHeaderLine( 'Location' );
+		if ( 302 !== $response->getStatusCode() || '' === $location ) {
+			return self::server_error();
+		}
+
+		parse_str( (string) wp_parse_url( $location, PHP_URL_QUERY ), $params );
+		if ( $approved && isset( $params['code'] ) ) {
 			self::remember_client( $auth->getClient() );
 		}
 
-		return $response->getHeaderLine( 'Location' );
+		return $location;
+	}
+
+	private static function server_error(): \WP_Error {
+		return new \WP_Error( 'server_error', __( 'The authorization could not be completed.', 'md3-wp-mcp' ), [ 'status' => 500 ] );
 	}
 
 	/**
@@ -271,7 +283,7 @@ final class Authorize {
 		$scopes   = isset( $post['scopes'] ) && is_array( $post['scopes'] ) ? $post['scopes'] : [];
 		$location = self::complete( $stored['query'], $user_id, $scopes, 'approve' === ( $post['decision'] ?? '' ) );
 		if ( is_wp_error( $location ) ) {
-			return self::error( 400, esc_html( $location->get_error_message() ) );
+			return self::error( (int) ( $location->get_error_data()['status'] ?? 400 ), esc_html( $location->get_error_message() ) );
 		}
 
 		return new \WP_HTTP_Response(

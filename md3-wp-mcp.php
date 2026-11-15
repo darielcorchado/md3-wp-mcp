@@ -23,14 +23,17 @@ define( 'MD3_WP_MCP_FILE', __FILE__ );
 define( 'MD3_WP_MCP_DIR', plugin_dir_path( __FILE__ ) );
 
 /**
- * Whether the runtime meets the plugin's requirements.
+ * Whether the runtime meets the plugin's requirements, and the bundled
+ * dependencies (vendor/) are present.
  *
  * Kept free of PHP 8 syntax so the notice can show on older PHP versions.
  *
  * @return bool
  */
 function md3_wp_mcp_requirements_met() {
-	return version_compare( PHP_VERSION, '8.2', '>=' ) && function_exists( 'wp_register_ability' );
+	return version_compare( PHP_VERSION, '8.2', '>=' )
+		&& function_exists( 'wp_register_ability' )
+		&& file_exists( MD3_WP_MCP_DIR . 'vendor/autoload_packages.php' );
 }
 
 if ( md3_wp_mcp_requirements_met() ) {
@@ -45,7 +48,7 @@ function md3_wp_mcp_load() {
 		add_action(
 			'admin_notices',
 			static function () {
-				echo '<div class="notice notice-error"><p>' . esc_html__( 'MD3 WP MCP requires PHP 8.2 or newer and WordPress 6.9 or newer (the Abilities API). The plugin is inactive until the requirements are met.', 'md3-wp-mcp' ) . '</p></div>';
+				echo '<div class="notice notice-error"><p>' . esc_html__( 'MD3 WP MCP requires PHP 8.2 or newer and WordPress 6.9 or newer (the Abilities API), or the plugin\'s vendor folder is missing: install the release build. The plugin is inactive until the requirements are met.', 'md3-wp-mcp' ) . '</p></div>';
 			}
 		);
 		return;

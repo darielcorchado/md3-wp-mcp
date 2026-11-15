@@ -6,7 +6,6 @@ use MD3\WPMCP\Auth\Request_Context;
 use MD3\WPMCP\Rate_Limiter;
 use MD3\WPMCP\Settings;
 use WP\MCP\Core\McpAdapter;
-use WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler;
 use WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler;
 use WP\MCP\Transport\HttpTransport;
 
@@ -50,7 +49,7 @@ final class Server {
 			'Read and edit site content: posts, pages, terms and media.',
 			MD3_WP_MCP_VERSION,
 			[ HttpTransport::class ],
-			ErrorLogMcpErrorHandler::class,
+			Error_Handler::class,
 			NullMcpObservabilityHandler::class,
 			Registry::names(),
 			[],

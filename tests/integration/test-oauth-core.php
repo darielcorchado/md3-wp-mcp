@@ -608,14 +608,59 @@ class Test_Oauth_Core extends Test_Case {
 		$this->insert_client( 'dcr-fresh', [ self::REDIRECT_URI ], 'Fresh', 0, time() - 60 );
 		$this->insert_client( 'dcr-done', [ self::REDIRECT_URI ], 'Done', 1, time() - 2 * DAY_IN_SECONDS );
 
-		$this->assertSame( 4, Tokens::prune() );
+		// dcr-live keeps live tokens; dcr-done finished long ago and has none.
+		$this->assertSame( 5, Tokens::prune() );
 
 		$this->assertSame( '0', $wpdb->get_var( 'SELECT COUNT(*) FROM ' . Schema::table( 'auth_codes' ) ) );
 		$this->assertSame( '1', $wpdb->get_var( 'SELECT COUNT(*) FROM ' . Schema::table( 'refresh_tokens' ) ) );
 		$this->assertSame( '3', $wpdb->get_var( 'SELECT COUNT(*) FROM ' . Schema::table( 'access_tokens' ) ) );
 		$this->assertNull( $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', 'dcr-stale' ) ) );
 		$this->assertNotNull( $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', 'dcr-fresh' ) ) );
-		$this->assertNotNull( $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', 'dcr-done' ) ) );
+		$this->assertNull( $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', 'dcr-done' ) ) );
+		$this->assertNotNull( $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', 'dcr-live' ) ) );
+	}
+
+	public function test_prune_clients_removes_old_completed_clients_without_live_tokens() {
+		global $wpdb;
+		$user_id = $this->make_mcp_user();
+		$old     = time() - 2 * DAY_IN_SECONDS;
+		$past    = gmdate( 'Y-m-d H:i:s', time() - 10 );
+
+		$this->insert_client( 'dcr-unused', [ self::REDIRECT_URI ], 'Unused', 1, $old );
+		$this->insert_client( 'dcr-recent', [ self::REDIRECT_URI ], 'Recent', 1, time() - 60 );
+
+		$live = $this->insert_client( 'dcr-live-access', [ self::REDIRECT_URI ], 'Live access', 1, $old );
+		$this->issue_access_token( $live, $user_id );
+
+		$with_refresh = $this->insert_client( 'dcr-live-refresh', [ self::REDIRECT_URI ], 'Live refresh', 1, $old );
+		$access       = $this->issue_access_token( $with_refresh, $user_id );
+		$this->issue_refresh_token( $access );
+		$wpdb->update( Schema::table( 'access_tokens' ), [ 'expires_at' => $past ], [ 'id_hash' => hash( 'sha256', $access->getIdentifier() ) ] );
+
+		$this->insert_client( 'dcr-live-code', [ self::REDIRECT_URI ], 'Live code', 1, $old );
+		$wpdb->insert(
+			Schema::table( 'auth_codes' ),
+			[ 'id_hash' => hash( 'sha256', 'live-code' ), 'client_id' => 'dcr-live-code', 'user_id' => $user_id, 'expires_at' => gmdate( 'Y-m-d H:i:s', time() + 60 ) ]
+		);
+
+		$dead = $this->insert_client( 'dcr-dead', [ self::REDIRECT_URI ], 'Dead tokens', 1, $old );
+		$revoked = $this->issue_access_token( $dead, $user_id );
+		$wpdb->update( Schema::table( 'access_tokens' ), [ 'revoked' => 1 ], [ 'id_hash' => hash( 'sha256', $revoked->getIdentifier() ) ] );
+		$expired = $this->issue_access_token( $dead, $user_id );
+		$wpdb->update( Schema::table( 'access_tokens' ), [ 'expires_at' => $past ], [ 'id_hash' => hash( 'sha256', $expired->getIdentifier() ) ] );
+
+		$this->insert_client( 'https://client.example.com/cimd.json', [ self::REDIRECT_URI ], 'CIMD', 1, $old );
+		$wpdb->update( Schema::table( 'clients' ), [ 'type' => 'cimd' ], [ 'client_id' => 'https://client.example.com/cimd.json' ] );
+
+		$this->assertSame( 3, Tokens::prune_clients() );
+
+		$left = $wpdb->get_col( 'SELECT client_id FROM ' . Schema::table( 'clients' ) . ' ORDER BY client_id' );
+		$this->assertSame( [ 'dcr-live-access', 'dcr-live-code', 'dcr-live-refresh', 'dcr-recent' ], $left );
+	}
+
+	public function test_prune_also_prunes_clients() {
+		$this->insert_client( 'dcr-unused', [ self::REDIRECT_URI ], 'Unused', 1, time() - 2 * DAY_IN_SECONDS );
+		$this->assertSame( 1, Tokens::prune() );
 	}
 
 	// ---------------------------------------------------------------------

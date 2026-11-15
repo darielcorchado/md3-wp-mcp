@@ -141,6 +141,9 @@ final class Content_Writer {
 				if ( ! in_array( $taxonomy, $usable, true ) ) {
 					return self::error( 'md3_mcp_invalid_taxonomy', sprintf( /* translators: %s: taxonomy */ __( 'Taxonomy "%s" is not available for this content type.', 'md3-wp-mcp' ), $taxonomy ) );
 				}
+				if ( ! current_user_can( get_taxonomy( $taxonomy )->cap->assign_terms ) ) {
+					return self::error( 'md3_mcp_forbidden', sprintf( /* translators: %s: taxonomy */ __( 'You are not allowed to assign terms in "%s".', 'md3-wp-mcp' ), $taxonomy ), 403 );
+				}
 				foreach ( (array) $term_ids as $term_id ) {
 					if ( ! is_int( $term_id ) || $term_id < 1 || ! term_exists( $term_id, $taxonomy ) ) {
 						return self::error( 'md3_mcp_bad_term', sprintf( /* translators: 1: term ID 2: taxonomy */ __( 'Term %1$s does not exist in %2$s.', 'md3-wp-mcp' ), is_scalar( $term_id ) ? (string) $term_id : '?', $taxonomy ) );

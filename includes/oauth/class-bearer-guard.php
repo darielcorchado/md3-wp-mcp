@@ -6,6 +6,7 @@ use MD3\WPMCP\Auth\Request_Context;
 use MD3\WPMCP\Auth\Scopes;
 use MD3\WPMCP\Mcp\Server;
 use MD3\WPMCP\Schema;
+use League\OAuth2\Server\Exception\OAuthServerException;
 use Nyholm\Psr7\ServerRequest;
 
 defined( 'ABSPATH' ) || exit;
@@ -204,7 +205,12 @@ final class Bearer_Guard {
 			$validated = Server_Factory::resource_server()->validateAuthenticatedRequest(
 				new ServerRequest( 'POST', OAuth::resource_url(), [ 'Authorization' => $header ] )
 			);
+		} catch ( OAuthServerException $e ) {
+			// A bad, expired or revoked token: answered with a 401.
+			return null;
 		} catch ( \Throwable $e ) {
+			// A key or database fault: make it visible, never with the token.
+			error_log( 'MD3 WP MCP: access token validation failed: ' . get_class( $e ) . ': ' . $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return null;
 		}
 

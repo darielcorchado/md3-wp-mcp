@@ -278,6 +278,26 @@ class Test_Oauth_Endpoints extends Test_Case {
 		$this->assertSame( 201, $this->register( [ 'redirect_uris' => [ self::REDIRECT_URI ] ] )->get_status() );
 	}
 
+	public function test_register_prunes_unused_clients_before_refusing() {
+		global $wpdb;
+		for ( $i = 0; $i < 50; $i++ ) {
+			$wpdb->insert(
+				Schema::table( 'clients' ),
+				[
+					'client_id'     => 'md3_seed' . $i,
+					'redirect_uris' => wp_json_encode( [ self::REDIRECT_URI ] ),
+					'type'          => 'dcr',
+					'completed'     => 1,
+					'created_at'    => gmdate( 'Y-m-d H:i:s', time() - 2 * DAY_IN_SECONDS ),
+				]
+			);
+		}
+
+		$response = $this->register( [ 'redirect_uris' => [ self::REDIRECT_URI ] ] );
+		$this->assertSame( 201, $response->get_status(), wp_json_encode( $response->get_data() ) );
+		$this->assertSame( 1, $this->client_count() );
+	}
+
 	public function test_register_refused_over_fifty_clients() {
 		global $wpdb;
 		for ( $i = 0; $i < 50; $i++ ) {
@@ -450,6 +470,27 @@ class Test_Oauth_Endpoints extends Test_Case {
 
 		// A denied DCR client stays unfinished, so it gets pruned.
 		global $wpdb;
+		$this->assertSame( '0', (string) $wpdb->get_var( $wpdb->prepare( 'SELECT completed FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', $client ) ) );
+	}
+
+	public function test_complete_returns_a_server_error_when_the_code_cannot_be_stored() {
+		global $wpdb;
+		$user_id = $this->mcp_user();
+		$client  = $this->registered_client();
+
+		// The authorization code insert fails (a database fault).
+		$codes  = Schema::table( 'auth_codes' );
+		$break  = static fn ( $query ) => str_starts_with( ltrim( $query ), "INSERT INTO `{$codes}`" ) ? 'INSERT INTO md3_missing_table VALUES (1)' : $query;
+		$errors = $wpdb->suppress_errors( true );
+		add_filter( 'query', $break );
+		$result = Authorize::complete( $this->query( $client ), $user_id, [ 'content:write' ], true );
+		remove_filter( 'query', $break );
+		$wpdb->suppress_errors( $errors );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'server_error', $result->get_error_code() );
+		$this->assertSame( 500, $result->get_error_data()['status'] );
+		// No code was issued, so the client stays unfinished.
 		$this->assertSame( '0', (string) $wpdb->get_var( $wpdb->prepare( 'SELECT completed FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', $client ) ) );
 	}
 

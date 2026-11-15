@@ -104,6 +104,20 @@ final class Upload_Media extends Ability {
 			return self::error( 'md3_mcp_too_large', __( 'The file is larger than 10 MB.', 'md3-wp-mcp' ), 413 );
 		}
 
+		// A URL without an extension (a CDN or resizer link): name it from its content.
+		if ( empty( wp_check_filetype( $name, self::MIMES )['type'] ) ) {
+			$mime = wp_get_image_mime( $tmp );
+			if ( in_array( $mime, self::MIMES, true ) ) {
+				$extensions = [
+					'image/jpeg' => 'jpg',
+					'image/png'  => 'png',
+					'image/webp' => 'webp',
+					'image/gif'  => 'gif',
+				];
+				$name = ( pathinfo( $name, PATHINFO_FILENAME ) ?: 'image' ) . '.' . $extensions[ $mime ];
+			}
+		}
+
 		$check = wp_check_filetype_and_ext( $tmp, $name, self::MIMES );
 		if ( empty( $check['type'] ) || ! in_array( $check['type'], self::MIMES, true ) ) {
 			wp_delete_file( $tmp );

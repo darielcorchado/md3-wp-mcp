@@ -62,6 +62,21 @@ class Test_Write_Abilities extends Test_Case {
 		$this->assertSame( 'md3_mcp_forbidden', $this->run_ability( 'update-content', [ 'id' => $id, 'title' => 'x' ] )->get_error_code() );
 	}
 
+	public function test_update_refuses_trashed_content() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft', 'post_title' => 'Binned' ] );
+		wp_trash_post( $id );
+		$this->as_mcp_user( [ 'content:read', 'content:write' ] );
+
+		foreach ( [ [ 'status' => 'draft' ], [ 'title' => 'Edited' ] ] as $change ) {
+			$result = $this->run_ability( 'update-content', [ 'id' => $id ] + $change );
+			$this->assertWPError( $result );
+			$this->assertSame( 'md3_mcp_trashed', $result->get_error_code() );
+			$this->assertSame( 409, $result->get_error_data()['status'] );
+		}
+		$this->assertSame( 'trash', get_post_status( $id ) );
+		$this->assertSame( 'Binned', get_post( $id )->post_title );
+	}
+
 	public function test_page_template_must_exist() {
 		$this->as_mcp_user( [ 'content:read', 'content:write' ] );
 		$r = $this->run_ability( 'create-content', [ 'type' => 'page', 'title' => 'P', 'template' => 'nope.php' ] );
@@ -133,6 +148,25 @@ class Test_Write_Abilities extends Test_Case {
 		$this->assertWPError( $bad );
 		$bad = $this->run_ability( 'create-content', [ 'title' => 'T', 'featured_media' => $r['id'] ] );
 		$this->assertWPError( $bad );
+	}
+
+	public function test_terms_need_the_assign_terms_capability() {
+		register_taxonomy( 'md3_restricted', 'post', [ 'public' => true, 'capabilities' => [ 'assign_terms' => 'manage_options' ] ] );
+		$term = self::factory()->term->create( [ 'taxonomy' => 'md3_restricted' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:write' ] );
+
+		$r = $this->run_ability( 'create-content', [ 'title' => 'Restricted terms', 'terms' => [ 'md3_restricted' => [ $term ] ] ] );
+		$this->assertWPError( $r );
+		$this->assertSame( 'md3_mcp_forbidden', $r->get_error_code() );
+		$this->assertSame( 403, $r->get_error_data()['status'] );
+		$this->assertCount( 0, get_posts( [ 'title' => 'Restricted terms', 'post_status' => 'any' ] ) );
+
+		$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$r  = $this->run_ability( 'update-content', [ 'id' => $id, 'terms' => [ 'md3_restricted' => [ $term ] ] ] );
+		$this->assertSame( 'md3_mcp_forbidden', $r->get_error_code() );
+		$this->assertSame( [], wp_get_object_terms( $id, 'md3_restricted', [ 'fields' => 'ids' ] ) );
+
+		unregister_taxonomy( 'md3_restricted' );
 	}
 
 	public function test_create_term_in_post_category() {

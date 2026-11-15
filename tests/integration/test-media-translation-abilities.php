@@ -1,6 +1,7 @@
 <?php
 use MD3\WPMCP\Abilities\Link_Translations;
 use MD3\WPMCP\Abilities\Registry;
+use MD3\WPMCP\Auth\Request_Context;
 use MD3\WPMCP\Tests\Test_Case;
 
 class Test_Media_Translation_Abilities extends Test_Case {
@@ -108,6 +109,40 @@ class Test_Media_Translation_Abilities extends Test_Case {
 		$this->assertSame( 'image/png', $r['mime'] );
 	}
 
+	public function test_upload_url_without_extension_is_named_from_its_content() {
+		$this->writer();
+		$png = base64_decode( self::PNG );
+		add_filter(
+			'pre_http_request',
+			static function ( $pre, $args, $url ) use ( $png ) {
+				if ( ! str_starts_with( $url, 'https://cdn.example.com/' ) ) {
+					return $pre;
+				}
+				if ( ! empty( $args['filename'] ) ) {
+					file_put_contents( $args['filename'], $png );
+				}
+				return [
+					'headers'  => [ 'content-type' => 'image/png' ],
+					'body'     => '',
+					'response' => [ 'code' => 200, 'message' => 'OK' ],
+					'cookies'  => [],
+					'filename' => $args['filename'] ?? null,
+				];
+			},
+			10,
+			3
+		);
+
+		$r = $this->run_ability( 'upload-media', [ 'url' => 'https://cdn.example.com/photo-123?w=1200' ] );
+		$this->assertNotWPError( $r );
+		$this->assertSame( 'image/png', $r['mime'] );
+		$this->assertMatchesRegularExpression( '/^photo-123(-\d+)?\.png$/', wp_basename( get_attached_file( $r['id'] ) ) );
+
+		$r = $this->run_ability( 'upload-media', [ 'url' => 'https://cdn.example.com/' ] );
+		$this->assertNotWPError( $r );
+		$this->assertMatchesRegularExpression( '/^image(-\d+)?\.png$/', wp_basename( get_attached_file( $r['id'] ) ) );
+	}
+
 	public function test_upload_requires_upload_files_capability() {
 		$this->as_mcp_user( [ 'content:read', 'content:write' ], 'subscriber' );
 		$r = $this->run_ability( 'upload-media', [ 'base64' => self::PNG, 'filename' => 'a.png' ] );
@@ -194,6 +229,87 @@ class Test_Media_Translation_Abilities extends Test_Case {
 		$r    = $this->run_ability( 'link-translations', [ 'id' => $post, 'language' => 'en', 'translations' => [ 'es' => $page ] ] );
 		$this->assertSame( 'md3_mcp_bad_translation', $r->get_error_code() );
 		$this->assertSame( '', get_post_meta( $post, '_fake_pll_lang', true ) );
+	}
+
+	public function test_link_translations_rejects_another_item_in_its_own_language() {
+		$this->writer();
+		$en    = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$other = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+
+		$r = $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'en', 'translations' => [ 'en' => $other ] ] );
+		$this->assertWPError( $r );
+		$this->assertSame( 'md3_mcp_bad_translation', $r->get_error_code() );
+		$this->assertSame( 400, $r->get_error_data()['status'] );
+		$this->assertSame( '', get_post_meta( $en, '_fake_pll_lang', true ) );
+
+		// Listing the item itself under its own language is harmless.
+		$this->assertNotWPError( $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'en', 'translations' => [ 'en' => $en ] ] ) );
+	}
+
+	public function test_link_translations_never_displaces_an_existing_translation() {
+		$this->writer();
+		$en  = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$es  = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$new = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$this->assertNotWPError( $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'en', 'translations' => [ 'es' => $es ] ] ) );
+
+		// The es slot of the group already holds another item.
+		$r = $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'en', 'translations' => [ 'es' => $new ] ] );
+		$this->assertSame( 'md3_mcp_translation_conflict', $r->get_error_code() );
+		$this->assertSame( 409, $r->get_error_data()['status'] );
+
+		// Moving the item to a language its group already has.
+		$r = $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'es' ] );
+		$this->assertSame( 'md3_mcp_translation_conflict', $r->get_error_code() );
+
+		$this->assertSame( [ 'en' => $en, 'es' => $es ], array_map( 'intval', pll_get_post_translations( $en ) ) );
+		$this->assertSame( 'en', pll_get_post_language( $en ) );
+	}
+
+	public function test_link_translations_never_pulls_an_item_out_of_another_group() {
+		$this->writer();
+		$other_en = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$other_es = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$this->assertNotWPError( $this->run_ability( 'link-translations', [ 'id' => $other_en, 'language' => 'en', 'translations' => [ 'es' => $other_es ] ] ) );
+
+		$en = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$r  = $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'en', 'translations' => [ 'es' => $other_es ] ] );
+		$this->assertSame( 'md3_mcp_translation_conflict', $r->get_error_code() );
+		$this->assertSame( 409, $r->get_error_data()['status'] );
+		$this->assertSame( [ 'en' => $other_en, 'es' => $other_es ], array_map( 'intval', pll_get_post_translations( $other_es ) ) );
+
+		// An item alone in its own group can be linked.
+		$single = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		pll_set_post_language( $single, 'es' );
+		$this->assertNotWPError( $this->run_ability( 'link-translations', [ 'id' => $en, 'language' => 'en', 'translations' => [ 'es' => $single ] ] ) );
+	}
+
+	public function test_link_translations_changing_the_language_of_live_content_needs_publish_scope() {
+		$this->writer();
+		$live  = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$draft = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+
+		// The live item itself.
+		$r = $this->run_ability( 'link-translations', [ 'id' => $live, 'language' => 'en' ] );
+		$this->assertSame( 'md3_mcp_insufficient_scope', $r->get_error_code() );
+		$this->assertSame( 'content:publish', Request_Context::denied_scope() );
+		$this->assertSame( '', get_post_meta( $live, '_fake_pll_lang', true ) );
+
+		// A live item listed as a translation.
+		$this->writer();
+		$r = $this->run_ability( 'link-translations', [ 'id' => $draft, 'language' => 'en', 'translations' => [ 'es' => $live ] ] );
+		$this->assertSame( 'md3_mcp_insufficient_scope', $r->get_error_code() );
+		$this->assertSame( '', get_post_meta( $draft, '_fake_pll_lang', true ) );
+
+		// A live item that keeps its language needs nothing more.
+		pll_set_post_language( $live, 'es' );
+		$this->writer();
+		$this->assertNotWPError( $this->run_ability( 'link-translations', [ 'id' => $draft, 'language' => 'en', 'translations' => [ 'es' => $live ] ] ) );
+
+		// With the publish scope the language of live content can change.
+		$this->as_mcp_user( [ 'content:read', 'content:write', 'content:publish' ] );
+		$fresh = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$this->assertNotWPError( $this->run_ability( 'link-translations', [ 'id' => $fresh, 'language' => 'en' ] ) );
 	}
 
 	public function test_get_content_returns_language_and_translations_from_polylang() {

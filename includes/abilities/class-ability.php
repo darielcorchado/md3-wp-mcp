@@ -66,15 +66,27 @@ abstract class Ability {
 	 * @param array<string,mixed>|null $input Input, null for tools without a schema.
 	 */
 	public function check_permission( ?array $input ): bool|\WP_Error {
-		if ( ! Request_Context::has_scope( $this->scope() ) ) {
-			Request_Context::deny_scope( $this->scope() );
-			return new \WP_Error(
-				'md3_mcp_insufficient_scope',
-				__( 'The access token does not grant the scope this tool needs.', 'md3-wp-mcp' ),
-				[ 'status' => 403 ]
-			);
+		$scope = $this->require_scope( $this->scope() );
+		if ( true !== $scope ) {
+			return $scope;
 		}
 		return $this->object_permission( $input ?? [] );
+	}
+
+	/**
+	 * Whether the token grants a scope. When it doesn't, the refusal is
+	 * recorded so the response asks the client for a step-up.
+	 */
+	protected function require_scope( string $scope ): true|\WP_Error {
+		if ( Request_Context::has_scope( $scope ) ) {
+			return true;
+		}
+		Request_Context::deny_scope( $scope );
+		return new \WP_Error(
+			'md3_mcp_insufficient_scope',
+			__( 'The access token does not grant the scope this tool needs.', 'md3-wp-mcp' ),
+			[ 'status' => 403 ]
+		);
 	}
 
 	/**

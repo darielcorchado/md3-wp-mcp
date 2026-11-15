@@ -26,6 +26,8 @@ final class Plugin {
 		OAuth\OAuth::boot();
 
 		Cleanup::register();
+		// Activation hooks don't run on every update path (sync, manual copy).
+		add_action( 'admin_init', [ self::class, 'schedule_cleanup' ] );
 		Admin\Diagnostics::register();
 		if ( is_admin() ) {
 			Admin\Settings_Page::register();
@@ -39,13 +41,19 @@ final class Plugin {
 	 */
 	public static function activate(): void {
 		Schema::install();
-
-		if ( ! wp_next_scheduled( self::CLEANUP_HOOK ) ) {
-			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::CLEANUP_HOOK );
-		}
+		self::schedule_cleanup();
 
 		OAuth\Authorize::add_rewrite_rule();
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Schedules the daily cleanup when it is missing.
+	 */
+	public static function schedule_cleanup(): void {
+		if ( ! wp_next_scheduled( self::CLEANUP_HOOK ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', self::CLEANUP_HOOK );
+		}
 	}
 
 	/**

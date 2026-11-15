@@ -334,6 +334,29 @@ class Test_Bearer_Guard extends Test_Case {
 		$this->assert_invalid_token( $this->mint( [ 'key' => new CryptKey( $pem, null, false ) ] ), 'foreign key' );
 	}
 
+	public function test_key_faults_are_logged_without_the_token_and_refused() {
+		$tokens = $this->issue_token();
+		$log    = wp_tempnam( 'md3-mcp-guard-log' );
+		$ini    = ini_set( 'error_log', $log );
+
+		// A token the resource server refuses is expected: nothing is logged.
+		$this->assert_invalid_token( 'not-a-jwt', 'garbage' );
+		$this->assertSame( '', (string) file_get_contents( $log ) );
+
+		// The key can't be read (a server fault): logged, still refused.
+		$stored = get_option( Keys::OPT_PRIVATE );
+		update_option( Keys::OPT_PRIVATE, 'not a key', false );
+		$this->assert_invalid_token( $tokens['access_token'], 'unreadable key' );
+		update_option( Keys::OPT_PRIVATE, $stored, false );
+
+		ini_set( 'error_log', (string) $ini );
+		$written = (string) file_get_contents( $log );
+		unlink( $log );
+
+		$this->assertStringContainsString( 'MD3 WP MCP: access token validation failed: RuntimeException: ', $written );
+		$this->assertStringNotContainsString( $tokens['access_token'], $written );
+	}
+
 	public function test_invalid_token_wins_over_other_authentication() {
 		// A later method that follows the filter contract (as Application
 		// Passwords and cookies do) keeps our error.
@@ -457,6 +480,27 @@ class Test_Bearer_Guard extends Test_Case {
 		// The JSON-RPC body still tells the client what happened.
 		$this->assertTrue( $response->get_data()['result']['isError'] ?? false, wp_json_encode( $response->get_data() ) );
 		$this->assertSame( 'draft', get_post_status( $id ) );
+	}
+
+	public function test_editing_live_content_without_publish_scope_asks_for_step_up() {
+		$id                            = self::factory()->post->create( [ 'post_status' => 'publish', 'post_title' => 'Live post' ] );
+		$tokens                        = $this->issue_token( [ 'content:read', 'content:write' ] );
+		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
+
+		$session = (string) $this->mcp_request( 'initialize', $this->initialize_params() )->get_headers()['Mcp-Session-Id'];
+
+		$calls = [
+			'md3-wp-mcp/update-content'     => [ 'id' => $id, 'title' => 'Changed' ],
+			'md3-wp-mcp/set-featured-image' => [ 'id' => $id, 'media_id' => 999999 ],
+		];
+		foreach ( $calls as $tool => $arguments ) {
+			$response = $this->mcp_request( 'tools/call', [ 'name' => McpNameSanitizer::sanitize_name( $tool ), 'arguments' => $arguments ], $session );
+
+			$this->assertSame( 403, $response->get_status(), $tool . ' ' . wp_json_encode( $response->get_data() ) );
+			$header = $response->get_headers()['WWW-Authenticate'] ?? '';
+			$this->assertStringStartsWith( 'Bearer error="insufficient_scope", scope="content:read content:write content:publish"', $header, $tool );
+		}
+		$this->assertSame( 'Live post', get_post( $id )->post_title );
 	}
 
 	public function test_allowed_tools_call_has_no_scope_challenge() {

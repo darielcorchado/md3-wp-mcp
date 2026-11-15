@@ -97,6 +97,7 @@ final class Settings_Page {
 
 	/** @return array{0:string,1:string} */
 	private static function save_security(): array {
+		$old_user = (int) Settings::security()['mcp_user_id'];
 		Settings::update_security(
 			[
 				'mcp_user_id'    => self::request_int( 'mcp_user_id' ),
@@ -104,6 +105,10 @@ final class Settings_Page {
 				'mcp_rate_limit' => self::request_int( 'mcp_rate_limit' ),
 			]
 		);
+		// Connections belong to the old MCP user: end them with the change.
+		if ( $old_user > 0 && (int) Settings::security()['mcp_user_id'] !== $old_user ) {
+			Tokens::revoke_all();
+		}
 		return [ 'security', 'saved' ];
 	}
 

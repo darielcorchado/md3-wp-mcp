@@ -71,8 +71,14 @@ final class Link_Translations extends Ability {
 			return self::bad_language( $language, $languages );
 		}
 
+		$requested = (array) ( $input['translations'] ?? [] );
+		if ( isset( $requested[ $language ] ) && (int) $requested[ $language ] !== $post->ID ) {
+			return new \WP_Error( 'md3_mcp_bad_translation', __( 'The translation in the item\'s own language must be the item itself.', 'md3-wp-mcp' ), [ 'status' => 400 ] );
+		}
+
 		$links = [];
-		foreach ( (array) ( $input['translations'] ?? [] ) as $lang => $translation_id ) {
+		$items = [ $language => $post ];
+		foreach ( $requested as $lang => $translation_id ) {
 			$lang = (string) $lang;
 			if ( ! in_array( $lang, $languages, true ) ) {
 				return self::bad_language( $lang, $languages );
@@ -87,23 +93,46 @@ final class Link_Translations extends Ability {
 			if ( $other->post_type !== $post->post_type ) {
 				return new \WP_Error( 'md3_mcp_bad_translation', __( 'Translations must be of the same content type.', 'md3-wp-mcp' ), [ 'status' => 400 ] );
 			}
-			$links[ $lang ] = $other->ID;
+			if ( $lang !== $language ) {
+				$links[ $lang ] = $other->ID;
+				$items[ $lang ] = $other;
+			}
 		}
 
 		// An item cannot be its own translation in another language, nor appear twice.
-		unset( $links[ $language ] );
 		if ( in_array( $post->ID, $links, true ) || count( $links ) !== count( array_unique( $links ) ) ) {
 			return new \WP_Error( 'md3_mcp_bad_translation', __( 'Each translation must be a different item.', 'md3-wp-mcp' ), [ 'status' => 400 ] );
 		}
 
-		pll_set_post_language( $post->ID, $language );
-		foreach ( $links as $lang => $translation_id ) {
-			pll_set_post_language( $translation_id, $lang );
+		$placing  = [ $language => $post->ID ] + $links;
+		$conflict = $this->conflict( $post->ID, $placing );
+		if ( is_wp_error( $conflict ) ) {
+			return $conflict;
 		}
 
-		$merged              = array_map( 'intval', (array) pll_get_post_translations( $post->ID ) );
-		$merged              = array_merge( $merged, $links );
-		$merged[ $language ] = $post->ID;
+		// Changing the language of live content changes what visitors see.
+		foreach ( $items as $lang => $item ) {
+			if ( pll_get_post_language( $item->ID ) !== $lang && in_array( $item->post_status, [ 'publish', 'future', 'private' ], true ) ) {
+				$scope = $this->require_scope( Scopes::PUBLISH );
+				if ( true !== $scope ) {
+					return $scope;
+				}
+			}
+		}
+
+		foreach ( $placing as $lang => $id ) {
+			pll_set_post_language( $id, $lang );
+		}
+
+		// The group keeps its other members; the placed items take their slots.
+		$merged = array_filter(
+			array_map( 'intval', (array) pll_get_post_translations( $post->ID ) ),
+			static fn ( int $id, $lang ): bool => ! in_array( $id, $placing, true ) || ( $placing[ $lang ] ?? 0 ) === $id,
+			ARRAY_FILTER_USE_BOTH
+		);
+		foreach ( $placing as $lang => $id ) {
+			$merged[ $lang ] = $id;
+		}
 		pll_save_post_translations( $merged );
 
 		return [
@@ -111,6 +140,42 @@ final class Link_Translations extends Ability {
 			'language'     => $language,
 			'translations' => array_map( 'intval', (array) pll_get_post_translations( $post->ID ) ),
 		];
+	}
+
+	/**
+	 * Linking only adds to a group: it never displaces an item from a slot of
+	 * the post's group, nor pulls an item out of another group. Unlinking
+	 * stays a wp-admin task.
+	 *
+	 * @param array<string,int> $placing Language => item ID, the post included.
+	 */
+	private function conflict( int $post_id, array $placing ): ?\WP_Error {
+		$group = array_map( 'intval', (array) pll_get_post_translations( $post_id ) );
+		foreach ( $placing as $lang => $id ) {
+			if ( isset( $group[ $lang ] ) && $group[ $lang ] !== $id ) {
+				return self::translation_conflict();
+			}
+		}
+
+		foreach ( $placing as $id ) {
+			if ( $id === $post_id ) {
+				continue;
+			}
+			$other_group = array_map( 'intval', (array) pll_get_post_translations( $id ) );
+			if ( ! in_array( $post_id, $other_group, true ) && array_diff( $other_group, [ $id ] ) ) {
+				return self::translation_conflict();
+			}
+		}
+
+		return null;
+	}
+
+	private static function translation_conflict(): \WP_Error {
+		return new \WP_Error(
+			'md3_mcp_translation_conflict',
+			__( 'This would replace or move an existing translation. Unlink it in wp-admin first.', 'md3-wp-mcp' ),
+			[ 'status' => 409 ]
+		);
 	}
 
 	/**

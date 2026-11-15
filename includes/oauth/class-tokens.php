@@ -132,8 +132,7 @@ final class Tokens {
 	}
 
 	/**
-	 * Deletes expired codes and tokens, and clients that never finished
-	 * sign-in within 24 h.
+	 * Deletes expired codes and tokens, and unused clients (prune_clients()).
 	 *
 	 * Rotated refresh tokens stay until they expire, for reuse detection. An
 	 * expired access token stays while an unexpired refresh token points to
@@ -159,8 +158,39 @@ final class Tokens {
 				$now
 			)
 		);
+		$deleted += self::prune_clients();
+
+		return $deleted;
+	}
+
+	/**
+	 * Deletes clients that never finished sign-in within 24 h, and finished
+	 * DCR or CIMD clients older than a day with no live code or token, so
+	 * the DCR cap only counts clients in use.
+	 *
+	 * @return int Clients deleted.
+	 */
+	public static function prune_clients(): int {
+		global $wpdb;
+		$codes   = Schema::table( 'auth_codes' );
+		$access  = Schema::table( 'access_tokens' );
+		$refresh = Schema::table( 'refresh_tokens' );
+		$clients = Schema::table( 'clients' );
+		$now     = self::utc( time() );
+		$day_ago = self::utc( time() - DAY_IN_SECONDS );
+
+		$deleted  = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$clients} WHERE completed = 0 AND created_at < %s", $day_ago ) );
 		$deleted += (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM {$clients} WHERE completed = 0 AND created_at < %s", self::utc( time() - DAY_IN_SECONDS ) )
+			$wpdb->prepare(
+				"DELETE FROM {$clients} WHERE completed = 1 AND created_at < %s
+				AND NOT EXISTS ( SELECT 1 FROM {$access} a WHERE a.client_id = {$clients}.client_id AND a.revoked = 0 AND a.expires_at > %s )
+				AND NOT EXISTS ( SELECT 1 FROM {$refresh} r WHERE r.client_id = {$clients}.client_id AND r.revoked = 0 AND r.expires_at > %s )
+				AND NOT EXISTS ( SELECT 1 FROM {$codes} c WHERE c.client_id = {$clients}.client_id AND c.revoked = 0 AND c.expires_at > %s )",
+				$day_ago,
+				$now,
+				$now,
+				$now
+			)
 		);
 
 		return $deleted;

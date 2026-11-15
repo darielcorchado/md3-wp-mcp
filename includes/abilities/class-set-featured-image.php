@@ -1,7 +1,6 @@
 <?php
 namespace MD3\WPMCP\Abilities;
 
-use MD3\WPMCP\Auth\Request_Context;
 use MD3\WPMCP\Auth\Scopes;
 
 defined( 'ABSPATH' ) || exit;
@@ -53,12 +52,8 @@ final class Set_Featured_Image extends Ability {
 	 */
 	protected function object_permission( array $input ): bool|\WP_Error {
 		$post = isset( $input['id'] ) ? get_post( (int) $input['id'] ) : null;
-		if ( $post && in_array( $post->post_status, [ 'publish', 'future', 'private' ], true ) && ! Request_Context::has_scope( Scopes::PUBLISH ) ) {
-			return new \WP_Error(
-				'md3_mcp_insufficient_scope',
-				__( 'Editing published content needs the content:publish scope.', 'md3-wp-mcp' ),
-				[ 'status' => 403 ]
-			);
+		if ( $post && in_array( $post->post_status, [ 'publish', 'future', 'private' ], true ) ) {
+			return $this->require_scope( Scopes::PUBLISH );
 		}
 		return true;
 	}

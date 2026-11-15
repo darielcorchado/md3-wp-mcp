@@ -51,6 +51,10 @@ final class Registration {
 			return self::invalid_metadata( $invalid );
 		}
 
+		// Clients left behind by old connections don't count against the cap.
+		if ( self::client_count() >= self::MAX_CLIENTS ) {
+			Tokens::prune_clients();
+		}
 		if ( self::client_count() >= self::MAX_CLIENTS ) {
 			return OAuth::error( 'md3_mcp_too_many_clients', __( 'This site has too many registered clients. Ask an administrator to remove unused connections.', 'md3-wp-mcp' ), 429 );
 		}

@@ -4,6 +4,7 @@ use MD3\WPMCP\Admin\Profile_Connections;
 use MD3\WPMCP\Admin\Settings_Page;
 use MD3\WPMCP\Audit_Log;
 use MD3\WPMCP\Cleanup;
+use MD3\WPMCP\OAuth\Keys;
 use MD3\WPMCP\OAuth\Tokens;
 use MD3\WPMCP\Schema;
 use MD3\WPMCP\Settings;
@@ -104,6 +105,21 @@ class Test_Admin extends Test_Case {
 		$admin = self::factory()->user->create( [ 'role' => 'administrator' ] );
 		$this->submit( 'md3_mcp_save_security', [ 'mcp_user_id' => $admin, 'mcp_rate_limit' => '5000' ] );
 		$this->assertSame( [ 'mcp_user_id' => 0, 'dcr' => false, 'mcp_rate_limit' => 1000 ], Settings::security() );
+	}
+
+	public function test_changing_the_mcp_user_revokes_every_connection() {
+		$this->as_admin();
+		$this->issue_token();
+		$old = Settings::mcp_user_id();
+
+		// Saving the same MCP user keeps the connections.
+		$this->submit( 'md3_mcp_save_security', [ 'mcp_user_id' => $old, 'dcr' => '1', 'mcp_rate_limit' => '120' ] );
+		$this->assertCount( 1, Tokens::connections() );
+
+		$new = self::factory()->user->create( [ 'role' => 'editor' ] );
+		$this->submit( 'md3_mcp_save_security', [ 'mcp_user_id' => $new, 'dcr' => '1', 'mcp_rate_limit' => '120' ] );
+		$this->assertSame( $new, Settings::mcp_user_id() );
+		$this->assertSame( [], Tokens::connections() );
 	}
 
 	public function test_rotate_keys_revokes_every_connection() {
@@ -220,14 +236,23 @@ class Test_Admin extends Test_Case {
 
 		$rows = Diagnostics::run();
 
-		$this->assertCount( 5, $rows );
+		$this->assertCount( 6, $rows );
 		foreach ( $rows as $row ) {
 			$this->assertIsBool( $row['ok'] );
 			$this->assertNotSame( '', $row['check'] );
 			$this->assertIsString( $row['detail'] );
 		}
-		$this->assertSame( [ true, true, true, true, false ], array_column( $rows, 'ok' ) );
+		$this->assertSame( 'OAuth keys load', $rows[0]['check'] );
+		$this->assertSame( [ true, true, true, true, true, false ], array_column( $rows, 'ok' ) );
 		$this->assertCount( 5, $calls );
+
+		// Unreadable keys fail the first check.
+		$stored = get_option( Keys::OPT_PRIVATE );
+		update_option( Keys::OPT_PRIVATE, 'not a key', false );
+		$rows = Diagnostics::run();
+		update_option( Keys::OPT_PRIVATE, $stored, false );
+		$this->assertFalse( $rows[0]['ok'] );
+		$this->assertStringContainsString( 'not a readable RSA key', $rows[0]['detail'] );
 	}
 
 	public function test_auth_echo_route_compares_the_bearer_to_the_nonce() {

@@ -2,6 +2,7 @@
 namespace MD3\WPMCP\Admin;
 
 use MD3\WPMCP\OAuth\Discovery;
+use MD3\WPMCP\OAuth\Keys;
 use MD3\WPMCP\OAuth\OAuth;
 
 defined( 'ABSPATH' ) || exit;
@@ -53,6 +54,7 @@ final class Diagnostics {
 		set_transient( self::TRANSIENT, $nonce, MINUTE_IN_SECONDS );
 
 		$rows = [
+			self::check_keys(),
 			self::check_protected_resource(),
 			self::check_authorization_server(),
 			self::check_unauthenticated_mcp(),
@@ -62,6 +64,16 @@ final class Diagnostics {
 
 		delete_transient( self::TRANSIENT );
 		return $rows;
+	}
+
+	private static function check_keys(): array {
+		$check = __( 'OAuth keys load', 'md3-wp-mcp' );
+		try {
+			Keys::get();
+		} catch ( \Throwable $e ) {
+			return self::row( $check, false, $e->getMessage() );
+		}
+		return self::row( $check, true, __( 'Loaded.', 'md3-wp-mcp' ) );
 	}
 
 	private static function check_protected_resource(): array {

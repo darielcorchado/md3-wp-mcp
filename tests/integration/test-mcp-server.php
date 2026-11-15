@@ -3,10 +3,14 @@ use MD3\WPMCP\Abilities\Registry;
 use MD3\WPMCP\Auth\Identity;
 use MD3\WPMCP\Auth\Request_Context;
 use MD3\WPMCP\Auth\Scopes;
+use MD3\WPMCP\Mcp\Error_Handler;
+use MD3\WPMCP\Mcp\Server;
 use MD3\WPMCP\Settings;
 use MD3\WPMCP\Tests\Test_Case;
 use WP\MCP\Abilities\McpAbilityExposure;
+use WP\MCP\Core\McpAdapter;
 use WP\MCP\Domain\Utils\McpNameSanitizer;
+use WP\MCP\Infrastructure\Observability\FailureReason;
 
 class Test_Mcp_Server extends Test_Case {
 
@@ -113,6 +117,37 @@ class Test_Mcp_Server extends Test_Case {
 			wp_json_encode( $data )
 		);
 		$this->assertSame( 'draft', get_post_status( $id ) );
+	}
+
+	public function test_server_uses_the_quiet_error_handler() {
+		$server = McpAdapter::instance()->get_server( Server::ID );
+		$this->assertNotNull( $server );
+		$this->assertInstanceOf( Error_Handler::class, $server->get_error_handler() );
+	}
+
+	public function test_error_handler_drops_expected_refusals_and_forwards_the_rest() {
+		$log      = wp_tempnam( 'md3-mcp-error-log' );
+		$previous = ini_set( 'error_log', $log );
+
+		$handler = new Error_Handler();
+		$handler->log( 'Permission callback returned WP_Error: Authentication is required.', [ 'HttpTransport::check_permission' ] );
+		$handler->log(
+			'Tool permission check failed',
+			[
+				'tool_name'      => 'md3-wp-mcp-publish-content',
+				'error_code'     => 'md3_mcp_insufficient_scope',
+				'failure_reason' => FailureReason::PERMISSION_CHECK_FAILED,
+			]
+		);
+		$handler->log( 'Error in transport permission callback: boom', [ 'HttpTransport::check_permission' ] );
+
+		ini_set( 'error_log', (string) $previous );
+		$written = (string) file_get_contents( $log );
+		unlink( $log );
+
+		$this->assertStringNotContainsString( 'Permission callback returned WP_Error', $written );
+		$this->assertStringNotContainsString( 'Tool permission check failed', $written );
+		$this->assertStringContainsString( '[ERROR] Error in transport permission callback: boom', $written );
 	}
 
 	public function test_default_server_does_not_list_our_tools() {
