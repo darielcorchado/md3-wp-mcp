@@ -24,6 +24,13 @@ final class Plugin {
 		\WP\MCP\Core\McpAdapter::instance();
 
 		OAuth\OAuth::boot();
+
+		Cleanup::register();
+		Admin\Diagnostics::register();
+		if ( is_admin() ) {
+			Admin\Settings_Page::register();
+			Admin\Profile_Connections::register();
+		}
 	}
 
 	/**
