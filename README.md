@@ -9,7 +9,6 @@ A content-only MCP server for WordPress, with its own OAuth 2.1 sign-in. It lets
 - HTTPS. Plain HTTP only works when `wp_get_environment_type()` is `local`.
 - The `Authorization` header must reach PHP. Some server setups strip it (see [Server notes](#server-notes)).
 - `/.well-known/…`, `/md3-mcp/authorize` and `/wp-json/…` must not be page-cached, redirected or challenged by the web server or a CDN.
-- A standard WordPress layout, where `index.php` sits in the same folder as `wp-load.php`. See [Server notes](#server-notes) for the one known exception.
 
 Polylang and Rank Math are optional. The translation tool only appears when Polylang is active.
 
@@ -125,7 +124,6 @@ That is 14 tools, or 13 without Polylang. Content and excerpts always pass throu
 - **`/.well-known/` and `/wp-json/`.** Exclude `/.well-known/oauth-*`, `/md3-mcp/authorize` and `/wp-json/*` from the page cache, and make sure nothing redirects or challenges them. The plugin sends `no-store` headers, but a full-page cache can still ignore them. On GridPane, check the Nginx page cache first. Let's Encrypt only uses `/.well-known/acme-challenge/`, so it is not affected.
 - **Polylang.** `/md3-mcp/authorize` and `/.well-known/*` must not get a language prefix.
 - **Other MCP plugins.** The plugin keeps its own issuer path (`/md3-mcp`) and does not touch the adapter's default server, so it can sit beside plugins that bundle the same adapter. Note that a plugin that gives administrators code access over MCP (such as Novamira) defeats the "content only" promise. Deactivate it once this plugin works.
-- **WordPress in its own directory.** The plugin currently needs the standard front controller, with `index.php` in `ABSPATH`. On sites where it is not (the "WordPress in its own directory" setup, or Bedrock), the MCP endpoint currently answers 401. Use a standard layout for now.
 
 ## Development
 

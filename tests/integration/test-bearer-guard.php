@@ -49,121 +49,98 @@ class Test_Bearer_Guard extends Test_Case {
 		$this->assertSame( 'Bearer direct', Bearer_Guard::authorization_header() );
 	}
 
-	public function test_is_mcp_path() {
-		$this->assertTrue( Bearer_Guard::is_mcp_path( self::MCP_PATH, [] ) );
-		$this->assertTrue( Bearer_Guard::is_mcp_path( self::MCP_PATH . '/', [] ) );
-		$this->assertTrue( Bearer_Guard::is_mcp_path( self::MCP_PATH . '?foo=bar', [] ) );
-		$this->assertTrue( Bearer_Guard::is_mcp_path( '/index.php?rest_route=/md3-wp-mcp/mcp', [ 'rest_route' => '/md3-wp-mcp/mcp' ] ) );
-		$this->assertTrue( Bearer_Guard::is_mcp_path( '/', [ 'rest_route' => '/md3-wp-mcp/mcp/' ] ) );
-
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-json/wp/v2/posts', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-json/md3-wp-mcp/mcp-other', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-json/md3-wp-mcp/mcp/extra', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-json/md3-wp-mcp/v1/oauth/token', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/', [ 'rest_route' => '/wp/v2/posts' ] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/', [ 'rest_route' => [ '/md3-wp-mcp/mcp' ] ] ) );
-		// A rest_route query var wins over the path, as it does in WP::parse_request().
-		$this->assertFalse( Bearer_Guard::is_mcp_path( self::MCP_PATH . '?rest_route=/wp/v2/posts', [ 'rest_route' => '/wp/v2/posts' ] ) );
-	}
-
-	public function test_rest_route_parameter_counts_only_on_the_front_controller_path() {
-		$route = [ 'rest_route' => '/md3-wp-mcp/mcp' ];
-
-		$this->assertTrue( Bearer_Guard::is_mcp_path( '/?rest_route=/md3-wp-mcp/mcp', $route ) );
-		$this->assertTrue( Bearer_Guard::is_mcp_path( '/index.php?rest_route=/md3-wp-mcp/mcp', $route ) );
-
-		// Other PHP entry points never run parse_request(): the parameter means nothing there.
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-admin/admin-ajax.php?rest_route=/md3-wp-mcp/mcp&action=x', $route ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-admin/admin-post.php?rest_route=/md3-wp-mcp/mcp', $route ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/wp-comments-post.php?rest_route=/md3-wp-mcp/mcp', $route ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/some-page/?rest_route=/md3-wp-mcp/mcp', $route ) );
-	}
-
-	public function test_post_body_rest_route_wins_over_the_path() {
-		// WP::parse_request() reads $_POST before $_GET and the permalink.
-		$this->assertFalse( Bearer_Guard::is_mcp_path( self::MCP_PATH, [], [ 'rest_route' => '' ] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( self::MCP_PATH, [], [ 'rest_route' => '/wp/v2/posts' ] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/', [ 'rest_route' => '/md3-wp-mcp/mcp' ], [ 'rest_route' => '/wp/v2/posts' ] ) );
-		$this->assertTrue( Bearer_Guard::is_mcp_path( self::MCP_PATH, [], [ 'rest_route' => '/md3-wp-mcp/mcp' ] ) );
-	}
-
-	public function test_path_is_compared_raw() {
-		// wp_parse_url() would read `x` as a host and `/wp-json/…` as the path.
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '//x/wp-json/md3-wp-mcp/mcp', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '//wp-json/md3-wp-mcp/mcp', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/x/../wp-json/md3-wp-mcp/mcp', [] ) );
-		$this->assertFalse( Bearer_Guard::is_mcp_path( 'http://example.org/wp-json/md3-wp-mcp/mcp', [] ) );
-	}
-
-	public function test_no_identity_with_an_empty_post_rest_route() {
+	public function test_no_identity_before_the_rest_route_is_resolved() {
+		// WP::init() evaluates the current user before `init`, `wp_loaded` and
+		// `parse_request`: the route is not known yet, so no identity, even for
+		// a valid token sent to the MCP URL.
 		$tokens                        = $this->issue_token();
 		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
-		$this->front_controller_request( self::MCP_PATH );
-		$_POST['rest_route'] = '';
+		$_SERVER['REQUEST_URI']        = self::MCP_PATH;
+		$_SERVER['SCRIPT_FILENAME']    = ABSPATH . 'index.php';
+		$GLOBALS['wp']->query_vars     = [];
 
+		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
+		$this->assertNull( Request_Context::get() );
+
+		$_SERVER['REQUEST_URI'] = '/?rest_route=/md3-wp-mcp/mcp';
+		$_GET                   = [ 'rest_route' => '/md3-wp-mcp/mcp' ];
 		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
 		$this->assertNull( Request_Context::get() );
 	}
 
-	public function test_no_identity_off_the_front_controller() {
+	public function test_no_identity_when_the_resolved_route_is_not_mcp() {
 		$tokens                        = $this->issue_token();
 		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
+		// Even when the URL path is the MCP endpoint: the resolved route decides.
+		$_SERVER['REQUEST_URI']     = self::MCP_PATH;
+		$_SERVER['SCRIPT_FILENAME'] = ABSPATH . 'index.php';
 
-		// Sanity: the front controller with the same token does authenticate.
-		$this->front_controller_request( '/?rest_route=/md3-wp-mcp/mcp' );
-		$this->assertSame( Settings::mcp_user_id(), Bearer_Guard::determine_current_user( false ) );
-
-		// admin-ajax.php (runs admin_init and wp_ajax_* as the resolved user).
-		$this->front_controller_request( '/?rest_route=/md3-wp-mcp/mcp' );
-		$_SERVER['SCRIPT_FILENAME'] = ABSPATH . 'wp-admin/admin-ajax.php';
-		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
-		$this->assertNull( Request_Context::get() );
-
-		// Any other script, or none.
-		$_SERVER['SCRIPT_FILENAME'] = ABSPATH . 'wp-comments-post.php';
-		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
-		unset( $_SERVER['SCRIPT_FILENAME'] );
-		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
-
-		// An AJAX or admin context, even through index.php.
-		$this->front_controller_request( '/?rest_route=/md3-wp-mcp/mcp' );
-		add_filter( 'wp_doing_ajax', '__return_true' );
-		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
-		remove_filter( 'wp_doing_ajax', '__return_true' );
-		set_current_screen( 'dashboard' );
-		$this->assertFalse( Bearer_Guard::determine_current_user( false ) );
-		$this->assertNull( Request_Context::get() );
-		unset( $GLOBALS['current_screen'] );
-	}
-
-	public function test_identity_is_dropped_when_the_resolved_route_is_not_mcp() {
-		$this->assertSame( 0, has_action( 'parse_request', [ Bearer_Guard::class, 'confine_to_mcp_route' ] ) );
-
-		$tokens                        = $this->issue_token();
-		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
-
-		foreach ( [ '', '/wp/v2/posts', [ '/md3-wp-mcp/mcp' ] ] as $resolved ) {
-			$this->front_controller_request( self::MCP_PATH );
-			wp_set_current_user( (int) Bearer_Guard::determine_current_user( false ) );
-			$this->assertNotNull( Request_Context::get() );
-
-			$wp             = new WP();
-			$wp->query_vars = [ 'rest_route' => $resolved ];
-			Bearer_Guard::confine_to_mcp_route( $wp );
-
-			$this->assertSame( 0, get_current_user_id(), wp_json_encode( $resolved ) );
-			$this->assertNull( Request_Context::get(), wp_json_encode( $resolved ) );
+		foreach ( [ '/wp/v2/posts', '/md3-wp-mcp/mcp-other', '/md3-wp-mcp/mcp/extra', '/md3-wp-mcp/v1/oauth/token', '/', [ '/md3-wp-mcp/mcp' ] ] as $route ) {
+			$GLOBALS['wp']->query_vars = [ 'rest_route' => $route ];
+			$this->assertFalse( Bearer_Guard::determine_current_user( false ), wp_json_encode( $route ) );
+			$this->assertNull( Request_Context::get(), wp_json_encode( $route ) );
 		}
+	}
 
-		// The MCP route keeps it.
-		$this->front_controller_request( self::MCP_PATH );
-		$user_id = (int) Bearer_Guard::determine_current_user( false );
-		wp_set_current_user( $user_id );
-		$wp             = new WP();
-		$wp->query_vars = [ 'rest_route' => '/md3-wp-mcp/mcp/' ];
-		Bearer_Guard::confine_to_mcp_route( $wp );
-		$this->assertSame( $user_id, get_current_user_id() );
+	public function test_identity_on_the_mcp_route_in_any_layout() {
+		$tokens                        = $this->issue_token();
+		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
+		// Bedrock / WordPress in its own directory: index.php is not in ABSPATH,
+		// and the URL path carries the core subdirectory.
+		$_SERVER['SCRIPT_FILENAME'] = '/srv/www/site/web/index.php';
+		$_SERVER['REQUEST_URI']     = '/wp/wp-json/md3-wp-mcp/mcp';
+
+		foreach ( [ '/md3-wp-mcp/mcp', '/md3-wp-mcp/mcp/' ] as $route ) {
+			Request_Context::clear();
+			$GLOBALS['wp']->query_vars = [ 'rest_route' => $route ];
+			$this->assertSame( Settings::mcp_user_id(), Bearer_Guard::determine_current_user( false ), $route );
+			$this->assertNotNull( Request_Context::get(), $route );
+			$this->assertSame( $tokens['client_id'], Request_Context::get()->client_id, $route );
+		}
+	}
+
+	public function test_identity_appears_only_once_rest_serving_starts() {
+		$tokens                        = $this->issue_token();
+		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
+		$_SERVER['REQUEST_URI']        = self::MCP_PATH;
+		$_SERVER['SCRIPT_FILENAME']    = ABSPATH . 'index.php';
+
+		// WP::init(): no route yet. Plugins' `init` handlers see nobody.
+		$GLOBALS['wp']->query_vars = [];
+		$GLOBALS['current_user']   = null;
+		$this->assertSame( 0, get_current_user_id() );
+		$this->assertNull( Request_Context::get() );
+
+		// WP::parse_request() resolves the route, then
+		// WP_REST_Server::serve_request() clears the cached "nobody".
+		$GLOBALS['wp']->query_vars = [ 'rest_route' => '/md3-wp-mcp/mcp' ];
+		$GLOBALS['current_user']   = null;
+		$this->assertSame( Settings::mcp_user_id(), get_current_user_id() );
 		$this->assertNotNull( Request_Context::get() );
+	}
+
+	public function test_identity_is_refused_on_internal_requests_to_other_routes() {
+		// An identity from our token, then a sub-request to another route
+		// (rest_do_request, `_embed`…): the route check refuses it.
+		$tokens                        = $this->issue_token( [ 'content:read', 'content:write', 'content:publish' ] );
+		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
+		$GLOBALS['wp']->query_vars     = [ 'rest_route' => '/md3-wp-mcp/mcp' ];
+		$GLOBALS['current_user']       = null;
+		$this->assertSame( Settings::mcp_user_id(), get_current_user_id() );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_body( wp_json_encode( [ 'title' => 'Smuggled route', 'status' => 'publish' ] ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 403, $response->get_status() );
+		$this->assertSame( 'md3_mcp_route_forbidden', $response->get_data()['code'] );
+		$this->assertCount( 0, get_posts( [ 'title' => 'Smuggled route', 'post_status' => 'any' ] ) );
+	}
+
+	public function test_parse_request_hook_is_gone() {
+		$this->assertFalse( method_exists( Bearer_Guard::class, 'confine_to_mcp_route' ) );
+		$this->assertFalse( method_exists( Bearer_Guard::class, 'is_mcp_path' ) );
 	}
 
 	public function test_scope_denial_never_rewrites_an_unrelated_status() {
@@ -222,8 +199,6 @@ class Test_Bearer_Guard extends Test_Case {
 	public function test_plain_permalinks_use_the_rest_route_parameter() {
 		$this->set_permalink_structure( '' );
 		$this->assertStringContainsString( '?rest_route=/md3-wp-mcp/mcp', OAuth::resource_url() );
-		// The bare index.php path is not the MCP endpoint by itself.
-		$this->assertFalse( Bearer_Guard::is_mcp_path( '/index.php', [] ) );
 
 		$tokens                        = $this->issue_token();
 		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
@@ -395,23 +370,6 @@ class Test_Bearer_Guard extends Test_Case {
 		$this->assertCount( 0, get_posts( [ 'title' => 'Bearer on wp v2', 'post_status' => 'any' ] ) );
 	}
 
-	public function test_identity_is_refused_on_any_other_route() {
-		// The URL path is the MCP endpoint but the route resolves elsewhere
-		// (for example a `rest_route` body parameter): the route check refuses it.
-		$tokens                        = $this->issue_token( [ 'content:read', 'content:write', 'content:publish' ] );
-		$_SERVER['HTTP_AUTHORIZATION'] = 'Bearer ' . $tokens['access_token'];
-
-		$request = new WP_REST_Request( 'POST', '/wp/v2/posts' );
-		$request->set_header( 'Content-Type', 'application/json' );
-		$request->set_body( wp_json_encode( [ 'title' => 'Smuggled route', 'status' => 'publish' ] ) );
-		$response = $this->serve( $request, self::MCP_PATH );
-
-		$this->assertNotNull( Request_Context::get(), 'the guard authenticated the MCP path' );
-		$this->assertSame( 403, $response->get_status() );
-		$this->assertSame( 'md3_mcp_route_forbidden', $response->get_data()['code'] );
-		$this->assertCount( 0, get_posts( [ 'title' => 'Smuggled route', 'post_status' => 'any' ] ) );
-	}
-
 	public function test_application_password_on_mcp_route_is_rejected() {
 		$user_id                 = (int) self::factory()->user->create( [ 'role' => 'editor' ] );
 		$security                = Settings::security();
@@ -537,17 +495,6 @@ class Test_Bearer_Guard extends Test_Case {
 		);
 		$this->assertSame( 0, get_current_user_id(), $label );
 		$this->assertNull( Request_Context::get(), $label );
-	}
-
-	/**
-	 * Sets up the globals of a request to the front controller (index.php).
-	 */
-	private function front_controller_request( string $request_uri ): void {
-		Request_Context::clear();
-		$_SERVER['REQUEST_URI']     = $request_uri;
-		$_SERVER['SCRIPT_FILENAME'] = ABSPATH . 'index.php';
-		$_POST                      = [];
-		parse_str( (string) wp_parse_url( $request_uri, PHP_URL_QUERY ), $_GET );
 	}
 
 	/**

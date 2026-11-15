@@ -21,16 +21,21 @@ abstract class Test_Case extends WP_UnitTestCase {
 	/** @var array{0: array<string,mixed>, 1: array<string,mixed>, 2: array<string,mixed>} $_SERVER, $_GET and $_POST before the test. */
 	private array $superglobals = [ [], [], [] ];
 
+	/** @var array<string,mixed> $wp->query_vars before the test. */
+	private array $query_vars = [];
+
 	public function set_up() {
 		parent::set_up();
-		// issue_token() and serve() change REMOTE_ADDR, REQUEST_URI, $_GET…
+		// issue_token() and serve() change REMOTE_ADDR, REQUEST_URI, $_GET, $wp->query_vars…
 		$this->superglobals = [ $_SERVER, $_GET, $_POST ];
+		$this->query_vars   = $GLOBALS['wp']->query_vars;
 	}
 
 	public function tear_down() {
 		$this->mcp_sessions = [];
 		Request_Context::clear();
 		[ $_SERVER, $_GET, $_POST ] = $this->superglobals;
+		$GLOBALS['wp']->query_vars  = $this->query_vars;
 		parent::tear_down();
 	}
 
@@ -129,31 +134,33 @@ abstract class Test_Case extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Serves a REST request the way WP_REST_Server::serve_request() does for
-	 * a real HTTP request: the current user is determined afresh (as on
-	 * WP::init()), then authentication errors, dispatch, error conversion
-	 * and `rest_post_dispatch`. The request goes to the front controller
-	 * (index.php). Set the Authorization header in $_SERVER first.
-	 *
-	 * @param string|null $request_uri REQUEST_URI to serve under (its query string becomes $_GET);
-	 *                                 defaults to the route's URL.
+	 * Serves a REST request the way a real HTTP request reaches
+	 * WP_REST_Server::serve_request(): WP::init() evaluates the current user
+	 * before the route is known, WP::parse_request() sets the `rest_route`
+	 * query var, serve_request() clears a cached "nobody", then
+	 * authentication errors, dispatch, error conversion and
+	 * `rest_post_dispatch`. Set the Authorization header in $_SERVER first.
 	 */
-	protected function serve( \WP_REST_Request $request, ?string $request_uri = null ): \WP_REST_Response {
+	protected function serve( \WP_REST_Request $request ): \WP_REST_Response {
 		$server = rest_get_server();
 
-		if ( null === $request_uri ) {
-			$url         = rest_url( ltrim( $request->get_route(), '/' ) );
-			$query       = (string) wp_parse_url( $url, PHP_URL_QUERY );
-			$request_uri = (string) wp_parse_url( $url, PHP_URL_PATH ) . ( '' !== $query ? '?' . $query : '' );
-		}
-		$_SERVER['REQUEST_URI']     = $request_uri;
-		$_SERVER['REQUEST_METHOD']  = $request->get_method();
-		$_SERVER['SCRIPT_FILENAME'] = ABSPATH . 'index.php';
-		$_POST                      = [];
-		parse_str( (string) wp_parse_url( $request_uri, PHP_URL_QUERY ), $_GET );
+		$url                       = rest_url( ltrim( $request->get_route(), '/' ) );
+		$query                     = (string) wp_parse_url( $url, PHP_URL_QUERY );
+		$_SERVER['REQUEST_URI']    = (string) wp_parse_url( $url, PHP_URL_PATH ) . ( '' !== $query ? '?' . $query : '' );
+		$_SERVER['REQUEST_METHOD'] = $request->get_method();
+		$_POST                     = [];
+		parse_str( $query, $_GET );
 
-		$GLOBALS['current_user'] = null;
+		// WP::init(): no route yet.
+		$GLOBALS['wp']->query_vars = [];
+		$GLOBALS['current_user']   = null;
 		wp_get_current_user();
+
+		// WP::parse_request(), then WP_REST_Server::serve_request().
+		$GLOBALS['wp']->query_vars = [ 'rest_route' => $request->get_route() ];
+		if ( ! wp_get_current_user()->exists() ) {
+			$GLOBALS['current_user'] = null;
+		}
 
 		$result = $server->check_authentication();
 		if ( ! is_wp_error( $result ) ) {

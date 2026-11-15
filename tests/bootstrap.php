@@ -31,4 +31,10 @@ tests_add_filter(
 );
 
 require_once $wp_phpunit_dir . '/includes/bootstrap.php';
+
+// Tests serve REST requests: the bearer guard only acts while WordPress is
+// serving one, as rest_api_loaded() declares it.
+if ( ! defined( 'REST_REQUEST' ) ) {
+	define( 'REST_REQUEST', true );
+}
 require_once __DIR__ . '/helpers/class-test-case.php';

@@ -26,8 +26,6 @@ final class Bearer_Guard {
 
 	public static function register(): void {
 		add_filter( 'determine_current_user', [ self::class, 'determine_current_user' ], 30 );
-		// Before the authorize page (1) and rest_api_loaded (10).
-		add_action( 'parse_request', [ self::class, 'confine_to_mcp_route' ], 0 );
 		add_filter( 'rest_authentication_errors', [ self::class, 'authentication_errors' ], 5 );
 		add_filter( 'rest_request_before_callbacks', [ self::class, 'before_callbacks' ], 10, 3 );
 		// After Server::restore_refusal (priority 10) has put our own error in place.
@@ -58,57 +56,16 @@ final class Bearer_Guard {
 	}
 
 	/**
-	 * Whether a request targets the MCP endpoint, the way WP::parse_request()
-	 * resolves the route:
-	 * - a `rest_route` parameter wins over the path, from the POST body first,
-	 *   then the query string. It must be `/md3-wp-mcp/mcp`, and the path must
-	 *   be the front controller (`/` or `/index.php` under the home path) or
-	 *   the MCP URL path;
-	 * - otherwise the raw path must be the path of `rest_url('md3-wp-mcp/mcp')`.
+	 * `determine_current_user` priority 30: a valid bearer token, with no user
+	 * found by another method, becomes the token's user, only while WordPress
+	 * serves the MCP REST route.
 	 *
-	 * The path is compared as sent (no URL parsing), and a path starting with
-	 * `//` is refused. Whether the script is the front controller is checked by
-	 * the caller.
-	 *
-	 * @param array<string,mixed> $get  Query parameters.
-	 * @param array<string,mixed> $post POST body parameters.
-	 */
-	public static function is_mcp_path( string $request_uri, array $get, array $post = [] ): bool {
-		$path = explode( '?', $request_uri, 2 )[0];
-		if ( '' === $path || '/' !== $path[0] || str_starts_with( $path, '//' ) ) {
-			return false;
-		}
-		$path = untrailingslashit( $path );
-
-		$resource       = OAuth::resource_url();
-		$resource_query = (string) wp_parse_url( $resource, PHP_URL_QUERY );
-		$resource_path  = untrailingslashit( (string) wp_parse_url( $resource, PHP_URL_PATH ) );
-
-		if ( array_key_exists( 'rest_route', $post ) || array_key_exists( 'rest_route', $get ) ) {
-			$route = array_key_exists( 'rest_route', $post ) ? $post['rest_route'] : $get['rest_route'];
-			if ( ! is_string( $route ) || self::ROUTE !== untrailingslashit( $route ) ) {
-				return false;
-			}
-
-			$home = untrailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
-			$ok   = [ $home, $home . '/index.php' ];
-			if ( '' === $resource_query ) {
-				$ok[] = $resource_path;
-			}
-			return in_array( $path, $ok, true );
-		}
-
-		// Plain permalinks: the resource URL is `/?rest_route=…`, so the path alone says nothing.
-		if ( str_contains( $resource_query, 'rest_route' ) ) {
-			return false;
-		}
-
-		return $resource_path === $path;
-	}
-
-	/**
-	 * `determine_current_user` priority 30: a valid bearer token on the MCP
-	 * path, with no user found by another method, becomes the token's user.
+	 * Like core's Application Password gate: WP::init() evaluates the user
+	 * before the route is known (no identity then, so `init`, `wp_loaded` and
+	 * `parse_request` handlers never run as the MCP user), and
+	 * WP_REST_Server::serve_request() clears that cached "nobody", so the
+	 * user is evaluated again during the REST authentication check, with
+	 * REST_REQUEST defined and the `rest_route` query var resolved.
 	 *
 	 * @param mixed $user User ID found so far, or false.
 	 * @return mixed
@@ -122,17 +79,18 @@ final class Bearer_Guard {
 			return $user;
 		}
 
+		if ( ! wp_is_serving_rest_request() ) {
+			return $user;
+		}
+
+		$wp    = $GLOBALS['wp'] ?? null;
+		$route = $wp instanceof \WP ? ( $wp->query_vars['rest_route'] ?? '' ) : '';
+		if ( ! is_string( $route ) || ! self::is_mcp_route( $route ) ) {
+			return $user;
+		}
+
 		$header = self::authorization_header();
 		if ( ! preg_match( '/^Bearer(\s|$)/i', $header ) ) {
-			return $user;
-		}
-
-		if ( ! self::is_front_controller() ) {
-			return $user;
-		}
-
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared only.
-		if ( ! self::is_mcp_path( $request_uri, wp_unslash( $_GET ), wp_unslash( $_POST ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification -- routing only.
 			return $user;
 		}
 
@@ -145,25 +103,6 @@ final class Bearer_Guard {
 		Request_Context::set( $identity );
 
 		return $identity->user_id;
-	}
-
-	/**
-	 * `parse_request` priority 0: once WordPress has resolved the route, an
-	 * identity from our token survives only on the MCP route. Any other
-	 * front-end request (a page, a feed, another REST route) loses it.
-	 */
-	public static function confine_to_mcp_route( \WP $wp ): void {
-		if ( null === Request_Context::get() ) {
-			return;
-		}
-
-		$route = $wp->query_vars['rest_route'] ?? '';
-		if ( is_string( $route ) && self::ROUTE === untrailingslashit( $route ) ) {
-			return;
-		}
-
-		Request_Context::clear();
-		wp_set_current_user( 0 );
 	}
 
 	/**
@@ -315,28 +254,6 @@ final class Bearer_Guard {
 	private static function step_up_scopes( string $denied ): array {
 		$granted = null !== Request_Context::get() ? Request_Context::get()->scopes : [];
 		return array_values( array_intersect( Scopes::all(), array_merge( $granted, [ $denied ] ) ) );
-	}
-
-	/**
-	 * Whether this is a front-end request to WordPress's front controller.
-	 * Admin, AJAX, cron and XML-RPC requests, and other PHP entry points
-	 * (admin-post.php, wp-comments-post.php…) never parse a REST route, so
-	 * they never get an identity from our token.
-	 */
-	private static function is_front_controller(): bool {
-		if ( is_admin() || wp_doing_ajax() || wp_doing_cron() || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) ) {
-			return false;
-		}
-
-		$script = isset( $_SERVER['SCRIPT_FILENAME'] ) && is_string( $_SERVER['SCRIPT_FILENAME'] ) ? wp_unslash( $_SERVER['SCRIPT_FILENAME'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared only.
-		if ( '' === $script ) {
-			return false;
-		}
-
-		$script = realpath( $script );
-		$index  = realpath( ABSPATH . 'index.php' );
-
-		return false !== $script && false !== $index && $script === $index;
 	}
 
 	private static function is_mcp_route( string $route ): bool {
