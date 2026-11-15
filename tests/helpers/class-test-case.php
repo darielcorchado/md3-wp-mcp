@@ -18,22 +18,19 @@ abstract class Test_Case extends WP_UnitTestCase {
 	/** @var int Source of distinct client IPs for issue_token() registrations. */
 	private static int $token_ip_counter = 0;
 
-	/** @var string|null REMOTE_ADDR before the test; null when it was unset. */
-	private ?string $remote_addr_backup = null;
+	/** @var array{0: array<string,mixed>, 1: array<string,mixed>, 2: array<string,mixed>} $_SERVER, $_GET and $_POST before the test. */
+	private array $superglobals = [ [], [], [] ];
 
 	public function set_up() {
 		parent::set_up();
-		$this->remote_addr_backup = $_SERVER['REMOTE_ADDR'] ?? null;
+		// issue_token() and serve() change REMOTE_ADDR, REQUEST_URI, $_GET…
+		$this->superglobals = [ $_SERVER, $_GET, $_POST ];
 	}
 
 	public function tear_down() {
 		$this->mcp_sessions = [];
 		Request_Context::clear();
-		if ( null === $this->remote_addr_backup ) {
-			unset( $_SERVER['REMOTE_ADDR'] );
-		} else {
-			$_SERVER['REMOTE_ADDR'] = $this->remote_addr_backup;
-		}
+		[ $_SERVER, $_GET, $_POST ] = $this->superglobals;
 		parent::tear_down();
 	}
 
@@ -135,7 +132,8 @@ abstract class Test_Case extends WP_UnitTestCase {
 	 * Serves a REST request the way WP_REST_Server::serve_request() does for
 	 * a real HTTP request: the current user is determined afresh (as on
 	 * WP::init()), then authentication errors, dispatch, error conversion
-	 * and `rest_post_dispatch`. Set the Authorization header in $_SERVER first.
+	 * and `rest_post_dispatch`. The request goes to the front controller
+	 * (index.php). Set the Authorization header in $_SERVER first.
 	 *
 	 * @param string|null $request_uri REQUEST_URI to serve under (its query string becomes $_GET);
 	 *                                 defaults to the route's URL.
@@ -148,8 +146,10 @@ abstract class Test_Case extends WP_UnitTestCase {
 			$query       = (string) wp_parse_url( $url, PHP_URL_QUERY );
 			$request_uri = (string) wp_parse_url( $url, PHP_URL_PATH ) . ( '' !== $query ? '?' . $query : '' );
 		}
-		$_SERVER['REQUEST_URI']    = $request_uri;
-		$_SERVER['REQUEST_METHOD'] = $request->get_method();
+		$_SERVER['REQUEST_URI']     = $request_uri;
+		$_SERVER['REQUEST_METHOD']  = $request->get_method();
+		$_SERVER['SCRIPT_FILENAME'] = ABSPATH . 'index.php';
+		$_POST                      = [];
 		parse_str( (string) wp_parse_url( $request_uri, PHP_URL_QUERY ), $_GET );
 
 		$GLOBALS['current_user'] = null;
