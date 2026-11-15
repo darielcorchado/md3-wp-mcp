@@ -129,7 +129,7 @@ final class Settings_Page {
 	/** @return array{0:string,1:string} */
 	private static function rotate_keys(): array {
 		Keys::rotate();
-		return [ 'security', 'rotated' ];
+		return [ 'security', Keys::pinned() ? 'rotated_pinned' : 'rotated' ];
 	}
 
 	/** @return array{0:string,1:string} */
@@ -167,11 +167,12 @@ final class Settings_Page {
 	 */
 	public static function notice_messages(): array {
 		return [
-			'saved'       => __( 'Settings saved.', 'md3-wp-mcp' ),
-			'revoked'     => __( 'Connection revoked.', 'md3-wp-mcp' ),
-			'revoked_all' => __( 'All connections revoked.', 'md3-wp-mcp' ),
-			'rotated'     => __( 'Keys rotated. Every client has to connect again.', 'md3-wp-mcp' ),
-			'diagnostics' => __( 'Checks finished.', 'md3-wp-mcp' ),
+			'saved'          => __( 'Settings saved.', 'md3-wp-mcp' ),
+			'revoked'        => __( 'Connection revoked.', 'md3-wp-mcp' ),
+			'revoked_all'    => __( 'All connections revoked.', 'md3-wp-mcp' ),
+			'rotated'        => __( 'Keys rotated. Every client has to connect again.', 'md3-wp-mcp' ),
+			'rotated_pinned' => __( 'Keys are set in wp-config.php and were not changed; every connection was revoked.', 'md3-wp-mcp' ),
+			'diagnostics'    => __( 'Checks finished.', 'md3-wp-mcp' ),
 		];
 	}
 

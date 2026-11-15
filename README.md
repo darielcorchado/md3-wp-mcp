@@ -145,7 +145,7 @@ The build keeps only what `.distignore` allows and runs `composer install --no-d
 
 ### Translations
 
-The text domain is `md3-wp-mcp`. Spanish (US) is in `languages/`. After changing strings, regenerate the template and compile the translation:
+The text domain is `md3-wp-mcp`. Spanish (Spain), es_ES, is in `languages/`. After changing strings, regenerate the template and compile the translation:
 
 ```bash
 docker compose -f docker-compose.test.yml run --rm php wp i18n make-pot . languages/md3-wp-mcp.pot --exclude=vendor,tests --allow-root

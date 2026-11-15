@@ -87,6 +87,9 @@ final class List_Content extends Ability {
 			$args['lang'] = (string) $input['language'];
 		}
 
+		if ( ! empty( $input['term_id'] ) && empty( $input['taxonomy'] ) ) {
+			return new \WP_Error( 'md3_mcp_invalid_taxonomy', __( 'Pass a taxonomy of an enabled content type together with term_id.', 'md3-wp-mcp' ), [ 'status' => 400 ] );
+		}
 		if ( ! empty( $input['taxonomy'] ) ) {
 			$taxonomy = (string) $input['taxonomy'];
 			if ( ! in_array( $taxonomy, Content_Formatter::allowed_taxonomies(), true ) || empty( $input['term_id'] ) ) {

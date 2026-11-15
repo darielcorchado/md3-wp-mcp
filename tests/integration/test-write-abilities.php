@@ -62,6 +62,29 @@ class Test_Write_Abilities extends Test_Case {
 		$this->assertSame( 'md3_mcp_forbidden', $this->run_ability( 'update-content', [ 'id' => $id, 'title' => 'x' ] )->get_error_code() );
 	}
 
+	public function test_update_content_strips_scripts_even_with_unfiltered_html() {
+		$id      = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$user_id = $this->as_mcp_user( [ 'content:read', 'content:write' ] );
+		get_user_by( 'id', $user_id )->add_cap( 'unfiltered_html' );
+		$this->assertTrue( current_user_can( 'unfiltered_html' ) );
+
+		$r = $this->run_ability(
+			'update-content',
+			[
+				'id'      => $id,
+				'content' => '<p>Body</p><script>alert(1)</script>',
+				'excerpt' => 'Short<script>alert(2)</script>',
+			]
+		);
+		$this->assertNotWPError( $r );
+
+		$post = get_post( $id );
+		$this->assertStringContainsString( '<p>Body</p>', $post->post_content );
+		$this->assertStringNotContainsString( '<script', $post->post_content );
+		$this->assertStringNotContainsString( '<script', $post->post_excerpt );
+		$this->assertStringContainsString( 'Short', $post->post_excerpt );
+	}
+
 	public function test_update_refuses_trashed_content() {
 		$id = self::factory()->post->create( [ 'post_status' => 'draft', 'post_title' => 'Binned' ] );
 		wp_trash_post( $id );

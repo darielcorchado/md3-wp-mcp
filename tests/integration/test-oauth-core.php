@@ -59,6 +59,15 @@ class Test_Oauth_Core extends Test_Case {
 		$this->assertFalse( Redirect_Uri_Policy::allowed( 'javascript:alert(1)' ) );
 	}
 
+	public function test_redirect_policy_refuses_disguised_local_hosts() {
+		foreach ( [ 'localhost.', '10.0.0.5.', '0x7f.0.0.1', '127.1', '012.0.0.5', '100.64.0.1', '100.127.255.254', '2130706433', 'app.localhost.' ] as $host ) {
+			$this->assertFalse( Redirect_Uri_Policy::allowed( 'https://' . $host . '/cb' ), $host );
+		}
+		foreach ( [ 'claude.ai', 'chatgpt.com', 'example.com.', '123.example.com', '8.8.8.8', '100.128.0.1', '[2606:4700:4700::1111]' ] as $host ) {
+			$this->assertTrue( Redirect_Uri_Policy::allowed( 'https://' . $host . '/cb' ), $host );
+		}
+	}
+
 	public function test_redirect_policy_edge_cases() {
 		$this->assertTrue( Redirect_Uri_Policy::allowed( 'http://localhost:6274/oauth/callback' ) );
 		$this->assertTrue( Redirect_Uri_Policy::allowed( 'http://[::1]:8080/cb' ) );

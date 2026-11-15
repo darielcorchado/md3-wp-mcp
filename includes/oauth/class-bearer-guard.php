@@ -19,6 +19,9 @@ final class Bearer_Guard {
 	/** The MCP route, as WordPress matches it. */
 	const ROUTE = '/' . Server::NAMESPACE . '/' . Server::ROUTE;
 
+	/** Seconds a rate-limited MCP client is told to wait (the window). */
+	const RETRY_AFTER = 60;
+
 	/** Seconds between two `last_used_at` writes for one token. */
 	const LAST_USED_INTERVAL = 60;
 
@@ -157,7 +160,8 @@ final class Bearer_Guard {
 	 * `rest_request_after_callbacks` and `rest_post_dispatch`: adds the
 	 * `WWW-Authenticate` challenge to 401 and 403 answers of the MCP route,
 	 * and turns a tool call refused for a missing scope into a 403 with an
-	 * `insufficient_scope` challenge (the JSON-RPC body is kept).
+	 * `insufficient_scope` challenge (the JSON-RPC body is kept). A rate
+	 * limited MCP request gets `Retry-After`.
 	 *
 	 * @param mixed            $response Response or error.
 	 * @param mixed            $handler  Route handler (or the REST server on `rest_post_dispatch`).
@@ -170,6 +174,15 @@ final class Bearer_Guard {
 		}
 
 		$status = self::status( $response );
+
+		if ( 429 === $status && 'md3_mcp_rate_limited' === self::code( $response ) ) {
+			$response = is_wp_error( $response ) ? rest_convert_error_to_response( $response ) : $response;
+			if ( $response instanceof \WP_HTTP_Response ) {
+				$response->header( 'Retry-After', (string) self::RETRY_AFTER );
+			}
+			return $response;
+		}
+
 		$denied = in_array( $status, [ 200, 403 ], true ) ? Request_Context::denied_scope() : null;
 		if ( null === $denied && ! in_array( $status, [ 401, 403 ], true ) ) {
 			return $response;
@@ -264,6 +277,19 @@ final class Bearer_Guard {
 
 	private static function is_mcp_route( string $route ): bool {
 		return self::ROUTE === untrailingslashit( $route );
+	}
+
+	/**
+	 * Error code of a response or error, '' when there is none.
+	 *
+	 * @param mixed $response Response or error.
+	 */
+	private static function code( $response ): string {
+		if ( is_wp_error( $response ) ) {
+			return (string) $response->get_error_code();
+		}
+		$data = $response instanceof \WP_HTTP_Response ? $response->get_data() : null;
+		return is_array( $data ) && is_string( $data['code'] ?? null ) ? $data['code'] : '';
 	}
 
 	/**

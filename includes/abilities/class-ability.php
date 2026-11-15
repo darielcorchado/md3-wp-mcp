@@ -154,7 +154,13 @@ abstract class Ability {
 		$result = $this->check_permission( $input );
 		if ( true !== $result ) {
 			$message = is_wp_error( $result ) ? $result->get_error_code() : 'denied';
-			Audit_Log::record( $this->name(), 'denied', '', null, $message );
+			Audit_Log::record(
+				$this->name(),
+				'denied',
+				(string) ( $input['type'] ?? '' ),
+				isset( $input['id'] ) ? (int) $input['id'] : null,
+				$message
+			);
 		}
 		return $result;
 	}

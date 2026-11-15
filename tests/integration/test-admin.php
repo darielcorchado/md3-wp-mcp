@@ -85,6 +85,33 @@ class Test_Admin extends Test_Case {
 		$this->assertStringContainsString( 'tab=content', $location );
 	}
 
+	public function test_security_actions_refuse_non_administrators() {
+		$this->issue_token();
+		$mcp      = Settings::mcp_user_id();
+		$security = Settings::security();
+		$stored   = get_option( Keys::OPT_PRIVATE );
+
+		foreach ( [ 'editor', 'author' ] as $role ) {
+			wp_set_current_user( self::factory()->user->create( [ 'role' => $role ] ) );
+
+			foreach ( [ 'md3_mcp_revoke_all', 'md3_mcp_rotate_keys', 'md3_mcp_save_security' ] as $action ) {
+				$_POST = $_REQUEST = [ 'mcp_user_id' => 0, 'dcr' => '', 'mcp_rate_limit' => 1, '_wpnonce' => wp_create_nonce( $action ) ];
+				try {
+					Settings_Page::dispatch( $action );
+					$this->fail( $role . ' must be refused ' . $action );
+				} catch ( WPDieException $e ) {
+					$this->assertStringContainsString( 'not allowed', $e->getMessage(), $action );
+				}
+			}
+		}
+
+		// Nothing changed.
+		$this->assertCount( 1, Tokens::connections() );
+		$this->assertSame( $security, Settings::security() );
+		$this->assertSame( $mcp, Settings::mcp_user_id() );
+		$this->assertSame( $stored, get_option( Keys::OPT_PRIVATE ) );
+	}
+
 	public function test_save_content_stores_default_author() {
 		$this->as_admin();
 		$author = self::factory()->user->create( [ 'role' => 'author' ] );
@@ -128,8 +155,18 @@ class Test_Admin extends Test_Case {
 		$this->issue_token();
 		$this->assertCount( 2, Tokens::connections() );
 
-		$this->submit( 'md3_mcp_rotate_keys', [] );
+		$location = $this->submit( 'md3_mcp_rotate_keys', [] );
 		$this->assertSame( [], Tokens::connections() );
+		$this->assertStringContainsString( 'md3_notice=rotated&', $location . '&' );
+	}
+
+	public function test_rotating_pinned_keys_says_they_were_not_changed() {
+		// Keys from wp-config.php: Keys::pinned() is true and rotate_keys() redirects with this notice.
+		$this->assertFalse( Keys::pinned() );
+		$this->assertSame(
+			'Keys are set in wp-config.php and were not changed; every connection was revoked.',
+			Settings_Page::notice_messages()['rotated_pinned'] ?? null
+		);
 	}
 
 	public function test_revoke_all_and_single_revoke() {
@@ -285,6 +322,12 @@ class Test_Admin extends Test_Case {
 		set_transient( 'md3_mcp_rl_x', 1, 60 );
 		set_transient( 'unrelated_transient', 1, 60 );
 		wp_schedule_event( time() + 60, 'daily', 'md3_wp_mcp_cleanup' );
+		update_option( 'md3_wp_mcp_post_types', [ 'post' ] );
+		update_option( 'md3_wp_mcp_default_author', 3 );
+		update_option( 'md3_wp_mcp_db_version', '1' );
+		update_option( 'md3_wp_mcp_encryption_key', 'e', false );
+		// Other plugins' cache entries survive.
+		wp_cache_set( 'kept', 'yes', 'md3_unrelated_group' );
 
 		// Dropping real tables would break every later test: record the DROP statements and neutralize them.
 		$dropped = [];
@@ -310,7 +353,10 @@ class Test_Admin extends Test_Case {
 		}
 		$this->assertCount( 5, $dropped );
 		$this->assertFalse( get_option( 'md3_wp_mcp_security' ) );
-		$this->assertFalse( get_option( 'md3_wp_mcp_private_key' ) );
+		foreach ( [ 'md3_wp_mcp_post_types', 'md3_wp_mcp_default_author', 'md3_wp_mcp_security', 'md3_wp_mcp_db_version', 'md3_wp_mcp_private_key', 'md3_wp_mcp_encryption_key' ] as $option ) {
+			$this->assertFalse( get_option( $option ), $option );
+		}
+		$this->assertSame( 'yes', wp_cache_get( 'kept', 'md3_unrelated_group' ) );
 		$this->assertFalse( get_transient( 'md3_mcp_rl_x' ) );
 		$this->assertSame( 1, (int) get_transient( 'unrelated_transient' ) );
 		$this->assertFalse( wp_next_scheduled( 'md3_wp_mcp_cleanup' ) );

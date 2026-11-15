@@ -94,13 +94,21 @@ final class Redirect_Uri_Policy {
 	 * No DNS lookup: the redirect happens in the user's browser.
 	 */
 	private static function is_public_host( string $host ): bool {
+		// A trailing dot names the same host (`localhost.`, `10.0.0.5.`).
+		$host = rtrim( $host, '.' );
 		if ( '' === $host ) {
 			return false;
 		}
 
 		$ip = trim( $host, '[]' );
 		if ( false !== filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-			return false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE );
+			return false !== filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE )
+				&& ! self::is_shared_address( $ip );
+		}
+
+		// Browsers read `127.1`, `0x7f.0.0.1` or `012.0.0.5` as IPv4 addresses.
+		if ( preg_match( '/^(0x[0-9a-f]+|\d+)(\.(0x[0-9a-f]+|\d+))*$/i', $host ) ) {
+			return false;
 		}
 
 		if ( ! str_contains( $host, '.' ) || ! preg_match( '/^[a-z0-9.-]+$/', $host ) ) {
@@ -114,5 +122,13 @@ final class Redirect_Uri_Policy {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Carrier-grade NAT space, 100.64.0.0/10 (RFC 6598).
+	 */
+	private static function is_shared_address( string $ip ): bool {
+		$long = ip2long( $ip );
+		return false !== $long && ( $long & 0xFFC00000 ) === 0x64400000;
 	}
 }

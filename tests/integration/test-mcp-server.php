@@ -81,6 +81,7 @@ class Test_Mcp_Server extends Test_Case {
 		$response = $this->mcp_call( 'tools/list' );
 		$this->assertSame( 429, $response->get_status() );
 		$this->assertSame( 'md3_mcp_rate_limited', $response->get_data()['code'] );
+		$this->assertSame( '60', (string) ( $response->get_headers()['Retry-After'] ?? '' ) );
 	}
 
 	public function test_tools_call_create_content_end_to_end() {

@@ -26,6 +26,22 @@ class Test_Read_Abilities extends Test_Case {
 		$this->assertSame( 1, $rows['total'] );
 	}
 
+	public function test_denied_call_logs_the_object() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$this->as_mcp_user( [] );
+		$this->setExpectedIncorrectUsage( 'WP_Ability::execute' );
+		$this->run_ability( 'get-content', [ 'id' => $id ] );
+		$this->run_ability( 'list-content', [ 'type' => 'page' ] );
+
+		global $wpdb;
+		$table = \MD3\WPMCP\Schema::table( 'log' );
+		$get   = $wpdb->get_row( $wpdb->prepare( "SELECT object_type, object_id FROM {$table} WHERE tool = %s AND result = 'denied'", 'get-content' ) );
+		$this->assertSame( (string) $id, (string) $get->object_id );
+		$list = $wpdb->get_row( $wpdb->prepare( "SELECT object_type, object_id FROM {$table} WHERE tool = %s AND result = 'denied'", 'list-content' ) );
+		$this->assertSame( 'page', $list->object_type );
+		$this->assertNull( $list->object_id );
+	}
+
 	public function test_list_content_returns_drafts_and_respects_per_page_cap() {
 		self::factory()->post->create_many( 3, [ 'post_status' => 'draft' ] );
 		$this->as_mcp_user( [ 'content:read' ] );
@@ -94,6 +110,15 @@ class Test_Read_Abilities extends Test_Case {
 		$this->assertSame( [], $r['translations'] );
 		$this->assertSame( $id, $r['id'] );
 		$this->assertArrayHasKey( 'preview_link', $r );
+	}
+
+	public function test_list_content_term_id_without_taxonomy_is_refused() {
+		$this->as_mcp_user( [ 'content:read' ] );
+		$cat = self::factory()->category->create();
+		$r   = $this->run_ability( 'list-content', [ 'term_id' => $cat ] );
+		$this->assertWPError( $r );
+		$this->assertSame( 'md3_mcp_invalid_taxonomy', $r->get_error_code() );
+		$this->assertSame( 400, $r->get_error_data()['status'] );
 	}
 
 	public function test_list_post_types_only_returns_allowed_types() {

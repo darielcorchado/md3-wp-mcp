@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-15T01:33:54+00:00\n"
+"POT-Creation-Date: 2026-11-15T02:12:44+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: md3-wp-mcp\n"
@@ -17,7 +17,7 @@ msgstr ""
 #. Plugin Name of the plugin
 #: md3-wp-mcp.php
 #: includes/abilities/class-registry.php:63
-#: includes/oauth/class-authorize.php:433
+#: includes/oauth/class-authorize.php:445
 msgid "MD3 WP MCP"
 msgstr ""
 
@@ -36,15 +36,15 @@ msgstr ""
 msgid "Dariel Corchado, Jenrry Cordero"
 msgstr ""
 
-#: includes/abilities/class-ability.php:73
+#: includes/abilities/class-ability.php:87
 msgid "The access token does not grant the scope this tool needs."
 msgstr ""
 
-#: includes/abilities/class-ability.php:97
+#: includes/abilities/class-ability.php:109
 msgid "Content not found."
 msgstr ""
 
-#: includes/abilities/class-ability.php:100
+#: includes/abilities/class-ability.php:112
 #: includes/abilities/class-content-writer.php:46
 #: includes/abilities/class-create-content.php:54
 #: includes/abilities/class-list-content.php:62
@@ -53,7 +53,7 @@ msgstr ""
 
 #. translators: %s: field name
 #: includes/abilities/class-content-writer.php:40
-#: includes/abilities/class-content-writer.php:164
+#: includes/abilities/class-content-writer.php:167
 #, php-format
 msgid "Unknown field: %s"
 msgstr ""
@@ -72,31 +72,37 @@ msgstr ""
 msgid "Taxonomy \"%s\" is not available for this content type."
 msgstr ""
 
+#. translators: %s: taxonomy
+#: includes/abilities/class-content-writer.php:145
+#, php-format
+msgid "You are not allowed to assign terms in \"%s\"."
+msgstr ""
+
 #. translators: 1: term ID 2: taxonomy
-#: includes/abilities/class-content-writer.php:146
+#: includes/abilities/class-content-writer.php:149
 #, php-format
 msgid "Term %1$s does not exist in %2$s."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:154
+#: includes/abilities/class-content-writer.php:157
 msgid "featured_media must be the ID of an image in the media library."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:160
+#: includes/abilities/class-content-writer.php:163
 msgid "seo must be an object."
 msgstr ""
 
 #. translators: %s: field names
-#: includes/abilities/class-content-writer.php:171
+#: includes/abilities/class-content-writer.php:174
 #, php-format
 msgid "This content type does not support: %s"
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:177
+#: includes/abilities/class-content-writer.php:180
 msgid "parent must be an existing item of the same content type."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:185
+#: includes/abilities/class-content-writer.php:188
 msgid "Unknown page template for the active theme."
 msgstr ""
 
@@ -158,26 +164,34 @@ msgid "Sets the language of a post or page and links it with its translations in
 msgstr ""
 
 #: includes/abilities/class-link-translations.php:65
-#: includes/abilities/class-set-featured-image.php:72
-#: includes/abilities/class-update-content.php:72
+#: includes/abilities/class-set-featured-image.php:67
+#: includes/abilities/class-update-content.php:71
 #: includes/abilities/class-upload-media.php:85
 msgid "You are not allowed to edit this content."
 msgstr ""
 
-#: includes/abilities/class-link-translations.php:85
+#: includes/abilities/class-link-translations.php:76
+msgid "The translation in the item's own language must be the item itself."
+msgstr ""
+
+#: includes/abilities/class-link-translations.php:91
 msgid "You are not allowed to edit a translation you listed."
 msgstr ""
 
-#: includes/abilities/class-link-translations.php:88
+#: includes/abilities/class-link-translations.php:94
 msgid "Translations must be of the same content type."
 msgstr ""
 
-#: includes/abilities/class-link-translations.php:96
+#: includes/abilities/class-link-translations.php:104
 msgid "Each translation must be a different item."
 msgstr ""
 
+#: includes/abilities/class-link-translations.php:176
+msgid "This would replace or move an existing translation. Unlink it in wp-admin first."
+msgstr ""
+
 #. translators: 1: language slug 2: valid slugs
-#: includes/abilities/class-link-translations.php:122
+#: includes/abilities/class-link-translations.php:187
 #, php-format
 msgid "Unknown language \"%1$s\". Available: %2$s"
 msgstr ""
@@ -190,7 +204,8 @@ msgstr ""
 msgid "Lists posts, pages and other enabled content, including drafts, with filters and pagination."
 msgstr ""
 
-#: includes/abilities/class-list-content.php:93
+#: includes/abilities/class-list-content.php:91
+#: includes/abilities/class-list-content.php:96
 msgid "Pass a taxonomy of an enabled content type together with term_id."
 msgstr ""
 
@@ -254,20 +269,15 @@ msgstr ""
 msgid "The content could not be restored."
 msgstr ""
 
-#: includes/abilities/class-set-featured-image.php:16
+#: includes/abilities/class-set-featured-image.php:15
 msgid "Set featured image"
 msgstr ""
 
-#: includes/abilities/class-set-featured-image.php:20
+#: includes/abilities/class-set-featured-image.php:19
 msgid "Sets the featured image of a post or page to an image from the media library. Changing live content needs the publish scope."
 msgstr ""
 
-#: includes/abilities/class-set-featured-image.php:59
-#: includes/abilities/class-update-content.php:59
-msgid "Editing published content needs the content:publish scope."
-msgstr ""
-
-#: includes/abilities/class-set-featured-image.php:76
+#: includes/abilities/class-set-featured-image.php:71
 msgid "media_id must be the ID of an image in the media library."
 msgstr ""
 
@@ -311,12 +321,16 @@ msgstr ""
 msgid "This content is in the trash."
 msgstr ""
 
-#: includes/abilities/class-update-content.php:16
+#: includes/abilities/class-update-content.php:15
 msgid "Update content"
 msgstr ""
 
-#: includes/abilities/class-update-content.php:20
+#: includes/abilities/class-update-content.php:19
 msgid "Updates the given fields of a post or page. Changing live content needs the publish scope."
+msgstr ""
+
+#: includes/abilities/class-update-content.php:68
+msgid "Restore this content before editing it."
 msgstr ""
 
 #: includes/abilities/class-upload-media.php:25
@@ -340,91 +354,99 @@ msgid "filename is required with base64."
 msgstr ""
 
 #: includes/abilities/class-upload-media.php:104
-#: includes/abilities/class-upload-media.php:184
-#: includes/abilities/class-upload-media.php:191
+#: includes/abilities/class-upload-media.php:198
+#: includes/abilities/class-upload-media.php:205
 msgid "The file is larger than 10 MB."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:110
+#: includes/abilities/class-upload-media.php:124
 msgid "Only JPEG, PNG, WebP and GIF images are accepted."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:158
+#: includes/abilities/class-upload-media.php:172
 msgid "url must start with http:// or https://."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:188
+#: includes/abilities/class-upload-media.php:202
 msgid "base64 is not valid base64 data."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:196
+#: includes/abilities/class-upload-media.php:210
 msgid "Could not create a temporary file."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:200
+#: includes/abilities/class-upload-media.php:214
 msgid "Could not write the temporary file."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:68
+#: includes/admin/class-diagnostics.php:70
+msgid "OAuth keys load"
+msgstr ""
+
+#: includes/admin/class-diagnostics.php:76
+msgid "Loaded."
+msgstr ""
+
+#: includes/admin/class-diagnostics.php:80
 msgid "Protected resource metadata is served and not cached"
 msgstr ""
 
 #. translators: 1: HTTP status, 2: Content-Type, 3: Cache-Control.
-#: includes/admin/class-diagnostics.php:80
+#: includes/admin/class-diagnostics.php:92
 #, php-format
 msgid "HTTP %1$d, Content-Type \"%2$s\", Cache-Control \"%3$s\"."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:84
+#: includes/admin/class-diagnostics.php:96
 msgid "Authorization server metadata is served"
 msgstr ""
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:95
+#: includes/admin/class-diagnostics.php:107
 #, php-format
 msgid "HTTP %d."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:99
+#: includes/admin/class-diagnostics.php:111
 msgid "The MCP endpoint refuses requests without a token"
 msgstr ""
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:117
+#: includes/admin/class-diagnostics.php:129
 #, php-format
 msgid "HTTP %1$d, WWW-Authenticate header: %2$s."
 msgstr ""
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:117
+#: includes/admin/class-diagnostics.php:129
 msgid "yes"
 msgstr ""
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:117
+#: includes/admin/class-diagnostics.php:129
 msgid "no"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:121
+#: includes/admin/class-diagnostics.php:133
 msgid "The Authorization header reaches PHP"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:139
+#: includes/admin/class-diagnostics.php:151
 msgid "Received."
 msgstr ""
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:141
+#: includes/admin/class-diagnostics.php:153
 #, php-format
 msgid "Not received (HTTP %d). The web server strips the Authorization header; pass it to PHP."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:146
+#: includes/admin/class-diagnostics.php:158
 msgid "The authorize page is reachable and not cached or redirected"
 msgstr ""
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:154
+#: includes/admin/class-diagnostics.php:166
 #, php-format
 msgid "HTTP %d without parameters (400 expected)."
 msgstr ""
@@ -464,7 +486,7 @@ msgid "Content"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:51
-#: includes/admin/class-settings-page.php:208
+#: includes/admin/class-settings-page.php:214
 msgid "Security"
 msgstr ""
 
@@ -485,36 +507,40 @@ msgid "Unknown action."
 msgstr ""
 
 #: includes/admin/class-settings-page.php:68
-#: includes/admin/class-settings-page.php:185
+#: includes/admin/class-settings-page.php:191
 msgid "You are not allowed to do this."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:165
+#: includes/admin/class-settings-page.php:170
 msgid "Settings saved."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:166
+#: includes/admin/class-settings-page.php:171
 msgid "Connection revoked."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:167
+#: includes/admin/class-settings-page.php:172
 msgid "All connections revoked."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:168
+#: includes/admin/class-settings-page.php:173
 msgid "Keys rotated. Every client has to connect again."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:169
+#: includes/admin/class-settings-page.php:174
+msgid "Keys are set in wp-config.php and were not changed; every connection was revoked."
+msgstr ""
+
+#: includes/admin/class-settings-page.php:175
 msgid "Checks finished."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:178
+#: includes/admin/class-settings-page.php:184
 msgid "Never"
 msgstr ""
 
 #. translators: %s: link to the Security tab.
-#: includes/admin/class-settings-page.php:207
+#: includes/admin/class-settings-page.php:213
 #, php-format
 msgid "The MCP user is not set, so no AI client can connect. Choose one on the %s tab."
 msgstr ""
@@ -783,15 +809,15 @@ msgstr ""
 msgid "Move content to the trash"
 msgstr ""
 
-#: includes/mcp/class-server.php:72
+#: includes/mcp/class-server.php:71
 msgid "Authentication is required."
 msgstr ""
 
-#: includes/mcp/class-server.php:77
+#: includes/mcp/class-server.php:76
 msgid "This token is not for the MCP user."
 msgstr ""
 
-#: includes/mcp/class-server.php:82
+#: includes/mcp/class-server.php:81
 #: includes/oauth/class-oauth.php:122
 msgid "Too many requests. Try again shortly."
 msgstr ""
@@ -824,37 +850,37 @@ msgstr ""
 msgid "This server only issues tokens for its MCP endpoint."
 msgstr ""
 
-#: includes/oauth/class-authorize.php:185
+#: includes/oauth/class-authorize.php:204
 msgid "The authorization could not be completed."
 msgstr ""
 
-#: includes/oauth/class-authorize.php:207
+#: includes/oauth/class-authorize.php:219
 msgid "This connection request is not valid. Start connecting again from your AI app."
 msgstr ""
 
-#: includes/oauth/class-authorize.php:215
+#: includes/oauth/class-authorize.php:227
 msgid "No MCP user is set up yet. An administrator must choose the MCP user in Settings > MD3 WP MCP."
 msgstr ""
 
 #. translators: %s: login name of the MCP user.
-#: includes/oauth/class-authorize.php:226
+#: includes/oauth/class-authorize.php:238
 #, php-format
 msgid "Only the MCP user can approve connections. Sign in as %s to connect."
 msgstr ""
 
-#: includes/oauth/class-authorize.php:228
+#: includes/oauth/class-authorize.php:240
 msgid "Log out and sign in as that user"
 msgstr ""
 
-#: includes/oauth/class-authorize.php:252
+#: includes/oauth/class-authorize.php:264
 msgid "This approval page has expired. Start connecting again from your AI app."
 msgstr ""
 
-#: includes/oauth/class-bearer-guard.php:183
+#: includes/oauth/class-bearer-guard.php:126
 msgid "The access token is invalid, expired or revoked."
 msgstr ""
 
-#: includes/oauth/class-bearer-guard.php:208
+#: includes/oauth/class-bearer-guard.php:151
 msgid "This access token can only be used on the MCP endpoint."
 msgstr ""
 
@@ -866,45 +892,45 @@ msgstr ""
 msgid "The body must be a JSON object."
 msgstr ""
 
-#: includes/oauth/class-registration.php:55
+#: includes/oauth/class-registration.php:59
 msgid "This site has too many registered clients. Ask an administrator to remove unused connections."
 msgstr ""
 
-#: includes/oauth/class-registration.php:77
+#: includes/oauth/class-registration.php:81
 msgid "The client could not be registered."
 msgstr ""
 
-#: includes/oauth/class-registration.php:102
+#: includes/oauth/class-registration.php:106
 msgid "redirect_uris must be a non-empty list."
 msgstr ""
 
-#: includes/oauth/class-registration.php:107
+#: includes/oauth/class-registration.php:111
 msgid "A redirect URI is not allowed. Use https on a public host, http on localhost or 127.0.0.1, or an allowed app scheme."
 msgstr ""
 
 #. translators: %d: maximum number of redirect URIs.
-#: includes/oauth/class-registration.php:114
+#: includes/oauth/class-registration.php:118
 #, php-format
 msgid "A client may register at most %d redirect URIs."
 msgstr ""
 
-#: includes/oauth/class-registration.php:128
+#: includes/oauth/class-registration.php:132
 msgid "client_name must be a string."
 msgstr ""
 
-#: includes/oauth/class-registration.php:134
+#: includes/oauth/class-registration.php:138
 msgid "Only the authorization_code and refresh_token grants are supported."
 msgstr ""
 
-#: includes/oauth/class-registration.php:139
+#: includes/oauth/class-registration.php:143
 msgid "Only the code response type is supported."
 msgstr ""
 
-#: includes/oauth/class-registration.php:143
+#: includes/oauth/class-registration.php:147
 msgid "Unknown scope."
 msgstr ""
 
-#: includes/oauth/class-registration.php:160
+#: includes/oauth/class-registration.php:164
 msgid "Unnamed client"
 msgstr ""
 
@@ -916,6 +942,6 @@ msgstr ""
 msgid "The token and client_id parameters are required."
 msgstr ""
 
-#: md3-wp-mcp.php:48
-msgid "MD3 WP MCP requires PHP 8.2 or newer and WordPress 6.9 or newer (the Abilities API). The plugin is inactive until the requirements are met."
+#: md3-wp-mcp.php:51
+msgid "MD3 WP MCP requires PHP 8.2 or newer and WordPress 6.9 or newer (the Abilities API), or the plugin's vendor folder is missing: install the release build. The plugin is inactive until the requirements are met."
 msgstr ""

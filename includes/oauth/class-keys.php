@@ -42,6 +42,13 @@ final class Keys {
 	}
 
 	/**
+	 * Whether a key is set in wp-config.php, so rotate() can't change it.
+	 */
+	public static function pinned(): bool {
+		return '' !== self::constant( self::CONST_PRIVATE ) || '' !== self::constant( self::CONST_ENCRYPTION );
+	}
+
+	/**
 	 * Replaces the stored keys (those not pinned by constants) and revokes
 	 * every connection.
 	 */
