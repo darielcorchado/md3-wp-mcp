@@ -55,6 +55,14 @@ function md3_wp_mcp_load() {
 }
 add_action( 'plugins_loaded', 'md3_wp_mcp_load' );
 
+/**
+ * Loads the plugin's translations from the languages folder.
+ */
+function md3_wp_mcp_load_textdomain() {
+	load_plugin_textdomain( 'md3-wp-mcp', false, dirname( plugin_basename( MD3_WP_MCP_FILE ) ) . '/languages' );
+}
+add_action( 'init', 'md3_wp_mcp_load_textdomain' );
+
 register_activation_hook(
 	__FILE__,
 	static function () {
