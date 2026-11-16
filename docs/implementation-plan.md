@@ -83,7 +83,7 @@
 
 | Bucket | Limit |
 |---|---|
-| `register` | 10 per IP per 3600 s |
+| `register` | 30 per IP per 60 s |
 | `token` | 30 per IP per 60 s |
 | `authorize` | 30 per IP per 60 s |
 | `revoke` | 30 per IP per 60 s |

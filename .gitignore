@@ -1,0 +1,5 @@
+vendor/
+tests/wp/
+*.zip
+.phpunit.result.cache
+.DS_Store

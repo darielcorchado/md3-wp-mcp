@@ -1,0 +1,16 @@
+/tests
+/bin
+/docs
+/.git
+/.github
+/.superpowers
+.gitignore
+.distignore
+composer.json
+composer.lock
+phpunit.xml.dist
+docker-compose.test.yml
+.phpunit.result.cache
+.DS_Store
+vendor
+*.zip
