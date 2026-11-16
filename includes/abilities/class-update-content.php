@@ -47,15 +47,8 @@ final class Update_Content extends Ability {
 		return [ 'type' => 'object' ];
 	}
 
-	/**
-	 * Editing live (published, scheduled or private) content needs the publish scope.
-	 */
 	protected function object_permission( array $input ): bool|\WP_Error {
-		$post = isset( $input['id'] ) ? get_post( (int) $input['id'] ) : null;
-		if ( $post && in_array( $post->post_status, [ 'publish', 'future', 'private' ], true ) ) {
-			return $this->require_scope( Scopes::PUBLISH );
-		}
-		return true;
+		return $this->require_publish_if_live( (int) ( $input['id'] ?? 0 ) );
 	}
 
 	public function execute( array $input ): array|\WP_Error {

@@ -68,6 +68,26 @@ final class Plugin {
 	 * Salted hash of the client IP, for rate limiting and the audit log.
 	 */
 	public static function client_ip_hash(): string {
-		return hash( 'sha256', wp_salt( 'auth' ) . ( $_SERVER['REMOTE_ADDR'] ?? '' ) );
+		return hash( 'sha256', wp_salt( 'auth' ) . self::client_ip() );
+	}
+
+	/**
+	 * The visitor's IP, for the per-IP rate limits and the log: REMOTE_ADDR.
+	 * Behind a reverse proxy or CDN that is the proxy's address for every
+	 * visitor, so a site there can return the real one with the
+	 * `md3_wp_mcp_client_ip` filter. Forwarded headers are never trusted by
+	 * default because any client can send them.
+	 */
+	public static function client_ip(): string {
+		$remote = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) $_SERVER['REMOTE_ADDR'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- hashed, never output.
+
+		/**
+		 * Filters the client IP used for rate limiting and the log.
+		 *
+		 * @param string $ip REMOTE_ADDR.
+		 */
+		$ip = apply_filters( 'md3_wp_mcp_client_ip', $remote );
+
+		return is_string( $ip ) && false !== filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : $remote;
 	}
 }

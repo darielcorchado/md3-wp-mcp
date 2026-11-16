@@ -20,12 +20,23 @@ final class Keys {
 	const CONST_PRIVATE    = 'MD3_WP_MCP_PRIVATE_KEY';
 	const CONST_ENCRYPTION = 'MD3_WP_MCP_ENCRYPTION_KEY';
 
+	/** @var array<string,array{private: CryptKey, public: CryptKey, encryption: string}> The last keys parsed, by key-material hash. */
+	private static array $parsed = [];
+
 	/**
 	 * @return array{private: CryptKey, public: CryptKey, encryption: string}
 	 * @throws \RuntimeException When a configured or stored private key can't be read.
 	 */
 	public static function get(): array {
 		$private_pem = self::private_pem();
+		$encryption  = self::encryption_key();
+
+		// Parsing the RSA key is the costly part and a request asks several
+		// times. Keyed by the key material, so a rotation is never served stale.
+		$id = hash( 'sha256', $private_pem . "\0" . $encryption );
+		if ( isset( self::$parsed[ $id ] ) ) {
+			return self::$parsed[ $id ];
+		}
 
 		$resource = openssl_pkey_get_private( $private_pem );
 		$details  = $resource ? openssl_pkey_get_details( $resource ) : false;
@@ -34,11 +45,14 @@ final class Keys {
 		}
 
 		// The keys are in memory, so league's file-permission check doesn't apply.
-		return [
-			'private'    => new CryptKey( $private_pem, null, false ),
-			'public'     => new CryptKey( $details['key'], null, false ),
-			'encryption' => self::encryption_key(),
+		self::$parsed = [
+			$id => [
+				'private'    => new CryptKey( $private_pem, null, false ),
+				'public'     => new CryptKey( $details['key'], null, false ),
+				'encryption' => $encryption,
+			],
 		];
+		return self::$parsed[ $id ];
 	}
 
 	/**

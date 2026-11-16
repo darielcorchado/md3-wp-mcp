@@ -20,21 +20,25 @@ final class Content_Writer {
 		'focus_keyword' => 'rank_math_focus_keyword',
 	];
 
+	/** Accepted only when creating: an existing item's language changes through link-translations. */
+	const CREATE_FIELDS = [ 'type', 'language' ];
+
 	const STATUSES = [ 'draft', 'pending' ];
 
 	/**
 	 * Creates ($existing null) or updates a post.
 	 *
-	 * On create `type` and `status` are read from $input; `author` is never
-	 * accepted (the caller sets post_author). On update only the given fields
-	 * change.
+	 * On create `type`, `status` and `language` are read from $input, and the
+	 * user needs the type's `edit_posts` capability; `author` is never accepted
+	 * (post_author is the configured default author). On update only the given
+	 * fields change; the caller checks `edit_post`.
 	 *
 	 * @param array<string,mixed> $input    Writer fields.
 	 * @param \WP_Post|null       $existing Post to update, null to create.
 	 * @return int|\WP_Error Post ID.
 	 */
 	public static function save( array $input, ?\WP_Post $existing ): int|\WP_Error {
-		$allowed = array_merge( self::FIELDS, [ 'status' ], $existing ? [] : [ 'type' ] );
+		$allowed = array_merge( self::FIELDS, [ 'status' ], $existing ? [] : self::CREATE_FIELDS );
 		foreach ( array_keys( $input ) as $key ) {
 			if ( ! in_array( $key, $allowed, true ) ) {
 				return self::error( 'md3_mcp_unknown_field', sprintf( /* translators: %s: field name */ __( 'Unknown field: %s', 'md3-wp-mcp' ), $key ) );
@@ -44,6 +48,9 @@ final class Content_Writer {
 		$type = $existing ? $existing->post_type : (string) ( $input['type'] ?? 'post' );
 		if ( ! Settings::is_allowed_post_type( $type ) || ! post_type_exists( $type ) ) {
 			return self::error( 'md3_mcp_type_not_allowed', __( 'This content type is not enabled for MCP.', 'md3-wp-mcp' ), 403 );
+		}
+		if ( ! $existing && ! current_user_can( get_post_type_object( $type )->cap->edit_posts ) ) {
+			return self::error( 'md3_mcp_forbidden', __( 'You are not allowed to create this content type.', 'md3-wp-mcp' ), 403 );
 		}
 
 		$status = $input['status'] ?? ( $existing ? null : 'draft' );
@@ -113,6 +120,10 @@ final class Content_Writer {
 			update_post_meta( $id, self::SEO_META[ $key ], wp_slash( Content_Sanitizer::plain( (string) $value ) ) );
 		}
 
+		if ( isset( $input['language'] ) ) {
+			pll_set_post_language( $id, (string) $input['language'] );
+		}
+
 		self::disable_subscriber_notification( $id );
 
 		return $id;
@@ -169,6 +180,16 @@ final class Content_Writer {
 			}
 		}
 
+		if ( isset( $input['language'] ) ) {
+			if ( ! function_exists( 'pll_languages_list' ) || ! function_exists( 'pll_set_post_language' ) ) {
+				return self::error( 'md3_mcp_polylang_inactive', __( 'language needs Polylang, which is not active on this site.', 'md3-wp-mcp' ) );
+			}
+			$languages = array_map( 'strval', (array) pll_languages_list() );
+			if ( ! is_string( $input['language'] ) || ! in_array( $input['language'], $languages, true ) ) {
+				return self::unknown_language( is_scalar( $input['language'] ) ? (string) $input['language'] : '', $languages );
+			}
+		}
+
 		$hierarchical_only = array_intersect( [ 'parent', 'menu_order', 'template' ], array_keys( $input ) );
 		if ( $hierarchical_only && 'page' !== $type && ! is_post_type_hierarchical( $type ) ) {
 			return self::error( 'md3_mcp_unsupported_field', sprintf( /* translators: %s: field names */ __( 'This content type does not support: %s', 'md3-wp-mcp' ), implode( ', ', $hierarchical_only ) ) );
@@ -197,6 +218,16 @@ final class Content_Writer {
 	 */
 	public static function is_image_attachment( int $id ): bool {
 		return $id > 0 && wp_attachment_is_image( $id );
+	}
+
+	/**
+	 * @param string[] $languages Polylang language slugs.
+	 */
+	public static function unknown_language( string $language, array $languages ): \WP_Error {
+		return self::error(
+			'md3_mcp_bad_language',
+			sprintf( /* translators: 1: language slug 2: valid slugs */ __( 'Unknown language "%1$s". Available: %2$s', 'md3-wp-mcp' ), $language, implode( ', ', $languages ) )
+		);
 	}
 
 	private static function error( string $code, string $message, int $status = 400 ): \WP_Error {

@@ -74,6 +74,41 @@ class Test_Lifecycle_Abilities extends Test_Case {
 		$this->assertSame( 'publish', get_post( $id )->post_status );
 	}
 
+	public function test_publish_now_on_draft_with_future_date_publishes_now() {
+		// Scheduled, then moved back to draft: the future date stays on the post.
+		$id = self::factory()->post->create( [ 'post_status' => 'future', 'post_date' => '2099-01-01 10:00:00' ] );
+		wp_update_post( [ 'ID' => $id, 'post_status' => 'draft' ] );
+		$this->assertSame( '2099-01-01 10:00:00', get_post( $id )->post_date );
+
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		$r = $this->run_ability( 'publish-content', [ 'id' => $id ] );
+		$this->assertNotWPError( $r );
+		$this->assertSame( 'publish', $r['status'] );
+		$p = get_post( $id );
+		$this->assertSame( 'publish', $p->post_status );
+		$this->assertLessThanOrEqual( time() + MINUTE_IN_SECONDS, strtotime( $p->post_date_gmt . ' UTC' ) );
+	}
+
+	public function test_publish_now_on_floating_draft_with_future_local_date_publishes_now() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		global $wpdb;
+		$wpdb->update( $wpdb->posts, [ 'post_date' => '2099-01-01 10:00:00', 'post_date_gmt' => '0000-00-00 00:00:00' ], [ 'ID' => $id ] );
+		clean_post_cache( $id );
+
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		$this->run_ability( 'publish-content', [ 'id' => $id ] );
+		$this->assertSame( 'publish', get_post( $id )->post_status );
+	}
+
+	public function test_publish_now_on_draft_with_past_date_keeps_that_date() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft', 'post_date' => '2020-03-04 05:06:07', 'post_date_gmt' => '2020-03-04 05:06:07' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:publish' ] );
+		$this->run_ability( 'publish-content', [ 'id' => $id ] );
+		$p = get_post( $id );
+		$this->assertSame( 'publish', $p->post_status );
+		$this->assertSame( '2020-03-04 05:06:07', $p->post_date );
+	}
+
 	public function test_unpublish_moves_published_and_scheduled_to_draft() {
 		$pub    = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		$future = self::factory()->post->create( [ 'post_status' => 'future', 'post_date' => '2099-01-01 10:00:00' ] );

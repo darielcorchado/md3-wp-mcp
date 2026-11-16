@@ -67,8 +67,10 @@ final class Publish_Content extends Ability {
 			if ( ! $date ) {
 				return new \WP_Error( 'md3_mcp_bad_date', __( 'date must be ISO 8601 or "Y-m-d H:i".', 'md3-wp-mcp' ), [ 'status' => 400 ] );
 			}
-		} elseif ( 'future' !== $post->post_status ) {
-			// Publish now without touching a date the post already has.
+		} elseif ( 'future' !== $post->post_status && ! self::has_future_date( $post, $now ) ) {
+			// Publish now without touching a past date the post already has.
+			// A future one (a draft that was scheduled) would make WordPress
+			// schedule it again, so that case publishes with the current time.
 			$date = null;
 		}
 
@@ -87,6 +89,16 @@ final class Publish_Content extends Ability {
 		Content_Writer::disable_subscriber_notification( $post->ID );
 
 		return Content_Formatter::summary( get_post( $post->ID ) );
+	}
+
+	/**
+	 * Whether the stored date is ahead of now, as wp_insert_post() would see
+	 * it when publishing (a floating draft's GMT date comes from its local one).
+	 */
+	private static function has_future_date( \WP_Post $post, \DateTimeImmutable $now ): bool {
+		$gmt = '0000-00-00 00:00:00' === $post->post_date_gmt ? get_gmt_from_date( $post->post_date ) : $post->post_date_gmt;
+		$ts  = strtotime( $gmt . ' UTC' );
+		return false !== $ts && $ts - $now->getTimestamp() >= MINUTE_IN_SECONDS;
 	}
 
 	/**

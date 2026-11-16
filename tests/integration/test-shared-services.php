@@ -68,6 +68,21 @@ class Test_Shared_Services extends Test_Case {
 		$this->assertSame( hash( 'sha256', wp_salt( 'auth' ) . '203.0.113.9' ), Plugin::client_ip_hash() );
 	}
 
+	public function test_client_ip_can_be_filtered_for_sites_behind_a_proxy() {
+		$_SERVER['REMOTE_ADDR'] = '10.0.0.1';
+		$this->assertSame( '10.0.0.1', Plugin::client_ip() );
+
+		$filter = static fn ( string $ip ): string => '10.0.0.1' === $ip ? '203.0.113.50' : $ip;
+		add_filter( 'md3_wp_mcp_client_ip', $filter );
+		$this->assertSame( '203.0.113.50', Plugin::client_ip() );
+		$this->assertSame( hash( 'sha256', wp_salt( 'auth' ) . '203.0.113.50' ), Plugin::client_ip_hash() );
+
+		// A filter returning something that isn't an IP is ignored.
+		remove_filter( 'md3_wp_mcp_client_ip', $filter );
+		add_filter( 'md3_wp_mcp_client_ip', static fn () => 'not an ip' );
+		$this->assertSame( '10.0.0.1', Plugin::client_ip() );
+	}
+
 	public function test_audit_log_records_identity_and_prunes_old_rows() {
 		global $wpdb;
 		Request_Context::set( new Identity( 7, 'client-x', [ Scopes::READ ], 'h' ) );

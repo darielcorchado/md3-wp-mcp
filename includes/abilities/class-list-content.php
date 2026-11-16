@@ -83,6 +83,8 @@ final class List_Content extends Ability {
 		if ( ! empty( $input['author'] ) ) {
 			$args['author'] = (int) $input['author'];
 		}
+		// Without it every language is listed: Polylang sets no current
+		// language in a REST request without `lang` (checked on 3.8.9).
 		if ( ! empty( $input['language'] ) && function_exists( 'pll_get_post_language' ) ) {
 			$args['lang'] = (string) $input['language'];
 		}

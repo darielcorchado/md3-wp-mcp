@@ -261,17 +261,18 @@ class Test_Oauth_Endpoints extends Test_Case {
 		$this->assertLessThanOrEqual( 191, mb_strlen( $name ) );
 	}
 
-	public function test_register_rate_limited_after_ten_per_ip() {
+	public function test_register_rate_limited_after_thirty_per_ip_per_minute() {
 		$this->pin_ip           = true;
 		$_SERVER['REMOTE_ADDR'] = '198.51.100.1';
-		for ( $i = 0; $i < 10; $i++ ) {
+		for ( $i = 0; $i < 30; $i++ ) {
 			$this->assertSame( 201, $this->register( [ 'redirect_uris' => [ self::REDIRECT_URI ] ] )->get_status() );
 		}
 
 		$limited = $this->register( [ 'redirect_uris' => [ self::REDIRECT_URI ] ] );
 		$this->assertSame( 429, $limited->get_status() );
 		$this->assertSame( 'md3_mcp_rate_limited', $limited->get_data()['error'] );
-		$this->assertSame( 10, $this->client_count() );
+		$this->assertSame( '60', $limited->get_headers()['Retry-After'] ?? null );
+		$this->assertSame( 30, $this->client_count() );
 
 		// Another IP is not affected.
 		$_SERVER['REMOTE_ADDR'] = '198.51.100.2';

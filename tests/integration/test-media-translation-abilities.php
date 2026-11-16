@@ -35,6 +35,17 @@ class Test_Media_Translation_Abilities extends Test_Case {
 		$this->assertSame( $post, (int) get_post( $r['id'] )->post_parent );
 	}
 
+	public function test_upload_attached_to_live_post_needs_publish_scope() {
+		$post = self::factory()->post->create( [ 'post_status' => 'publish' ] );
+		$this->writer();
+		$ability = new \MD3\WPMCP\Abilities\Upload_Media();
+		$this->assertSame( 'md3_mcp_insufficient_scope', $ability->check_permission( [ 'base64' => self::PNG, 'filename' => 'dot.png', 'attach_to' => $post ] )->get_error_code() );
+		$this->assertTrue( $ability->check_permission( [ 'base64' => self::PNG, 'filename' => 'dot.png' ] ) );
+
+		$this->as_mcp_user( [ 'content:read', 'content:write', 'content:publish' ] );
+		$this->assertTrue( $ability->check_permission( [ 'base64' => self::PNG, 'filename' => 'dot.png', 'attach_to' => $post ] ) );
+	}
+
 	public function test_upload_requires_exactly_one_source() {
 		$this->writer();
 		$both = $this->run_ability( 'upload-media', [ 'base64' => self::PNG, 'filename' => 'a.png', 'url' => 'https://example.com/a.png' ] );
@@ -151,7 +162,7 @@ class Test_Media_Translation_Abilities extends Test_Case {
 
 	public function test_upload_attach_to_post_user_cannot_edit_is_forbidden() {
 		$this->as_mcp_user( [ 'content:read', 'content:write' ], 'author' );
-		$other = self::factory()->post->create( [ 'post_author' => self::factory()->user->create( [ 'role' => 'administrator' ] ), 'post_status' => 'publish' ] );
+		$other = self::factory()->post->create( [ 'post_author' => self::factory()->user->create( [ 'role' => 'administrator' ] ), 'post_status' => 'draft' ] );
 		$r     = $this->run_ability( 'upload-media', [ 'base64' => self::PNG, 'filename' => 'a.png', 'attach_to' => $other ] );
 		$this->assertSame( 'md3_mcp_forbidden', $r->get_error_code() );
 		$missing = $this->run_ability( 'upload-media', [ 'base64' => self::PNG, 'filename' => 'a.png', 'attach_to' => 999999 ] );

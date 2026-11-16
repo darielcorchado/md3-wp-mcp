@@ -114,10 +114,12 @@ final class Settings_Page {
 
 	/** @return array{0:string,1:string} */
 	private static function revoke(): array {
-		$client_id = isset( $_REQUEST['client_id'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['client_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		Tokens::revoke_connection( $client_id, self::request_int( 'user_id' ) );
+		// Matched exactly, so not sanitized: sanitize_text_field() would strip
+		// percent-encoding from a CIMD URL. The query is prepared.
+		$client_id    = isset( $_REQUEST['client_id'] ) && is_string( $_REQUEST['client_id'] ) ? wp_unslash( $_REQUEST['client_id'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		$revoked      = '' !== $client_id ? Tokens::revoke_connection( $client_id, self::request_int( 'user_id' ) ) : 0;
 		$from_profile = isset( $_REQUEST['return'] ) && 'profile' === $_REQUEST['return']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		return [ $from_profile ? 'profile' : 'connections', 'revoked' ];
+		return [ $from_profile ? 'profile' : 'connections', $revoked > 0 ? 'revoked' : 'not_revoked' ];
 	}
 
 	/** @return array{0:string,1:string} */
@@ -169,6 +171,7 @@ final class Settings_Page {
 		return [
 			'saved'          => __( 'Settings saved.', 'md3-wp-mcp' ),
 			'revoked'        => __( 'Connection revoked.', 'md3-wp-mcp' ),
+			'not_revoked'    => __( 'No active connection matched, so nothing was revoked.', 'md3-wp-mcp' ),
 			'revoked_all'    => __( 'All connections revoked.', 'md3-wp-mcp' ),
 			'rotated'        => __( 'Keys rotated. Every client has to connect again.', 'md3-wp-mcp' ),
 			'rotated_pinned' => __( 'Keys are set in wp-config.php and were not changed; every connection was revoked.', 'md3-wp-mcp' ),
@@ -202,7 +205,8 @@ final class Settings_Page {
 		echo '<div class="wrap"><h1>MD3 WP MCP</h1>';
 
 		if ( isset( $messages[ $notice ] ) ) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $messages[ $notice ] ) . '</p></div>';
+			$class = 'not_revoked' === $notice ? 'notice-warning' : 'notice-success';
+			echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $messages[ $notice ] ) . '</p></div>';
 		}
 		if ( 0 === Settings::mcp_user_id() ) {
 			printf(

@@ -33,6 +33,14 @@ final class Upload_Media extends Ability {
 		return Scopes::WRITE;
 	}
 
+	/**
+	 * Attaching to live content can change what visitors see (a gallery
+	 * without IDs lists the attached images), so it needs the publish scope.
+	 */
+	protected function object_permission( array $input ): bool|\WP_Error {
+		return $this->require_publish_if_live( (int) ( $input['attach_to'] ?? 0 ) );
+	}
+
 	public function annotations(): array {
 		return [
 			'readonly'    => false,
@@ -51,7 +59,7 @@ final class Upload_Media extends Ability {
 				'alt'       => [ 'type' => 'string' ],
 				'title'     => [ 'type' => 'string' ],
 				'caption'   => [ 'type' => 'string' ],
-				'attach_to' => [ 'type' => 'integer', 'minimum' => 1, 'description' => 'ID of a post or page to attach the image to.' ],
+				'attach_to' => [ 'type' => 'integer', 'minimum' => 1, 'description' => 'ID of a post or page to attach the image to. Attaching to live content needs the publish scope.' ],
 			],
 			'additionalProperties' => false,
 		];

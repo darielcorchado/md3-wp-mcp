@@ -24,6 +24,35 @@ class Test_Write_Abilities extends Test_Case {
 		$this->assertWPError( $this->run_ability( 'create-content', [ 'title' => 'T', 'meta' => [ 'a' => 'b' ] ] ) );
 	}
 
+	public function test_create_content_sets_polylang_language() {
+		$this->as_mcp_user( [ 'content:read', 'content:write' ] );
+		$r = $this->run_ability( 'create-content', [ 'title' => 'Hola', 'language' => 'es' ] );
+		$this->assertNotWPError( $r );
+		$this->assertSame( 'es', pll_get_post_language( $r['id'] ) );
+		$this->assertSame( 'es', $r['language'] );
+	}
+
+	public function test_create_content_rejects_unknown_language_before_writing() {
+		$this->as_mcp_user( [ 'content:read', 'content:write' ] );
+		$before = wp_count_posts()->draft;
+		$r      = $this->run_ability( 'create-content', [ 'title' => 'Bonjour', 'language' => 'fr' ] );
+		$this->assertSame( 'md3_mcp_bad_language', $r->get_error_code() );
+		$this->assertStringContainsString( 'en, es', $r->get_error_message() );
+		wp_cache_flush();
+		$this->assertSame( $before, wp_count_posts()->draft );
+	}
+
+	public function test_update_content_leaves_language_to_link_translations() {
+		$id = self::factory()->post->create( [ 'post_status' => 'draft' ] );
+		$this->as_mcp_user( [ 'content:read', 'content:write' ] );
+		$r = $this->run_ability( 'update-content', [ 'id' => $id, 'language' => 'es' ] );
+		$this->assertSame( 'ability_invalid_input', $r->get_error_code() );
+		$this->assertFalse( pll_get_post_language( $id ) );
+
+		// The writer refuses it too, whatever the schema lets through.
+		$this->assertSame( 'md3_mcp_unknown_field', \MD3\WPMCP\Abilities\Content_Writer::save( [ 'language' => 'es' ], get_post( $id ) )->get_error_code() );
+	}
+
 	public function test_update_published_post_requires_publish_scope() {
 		$id = self::factory()->post->create( [ 'post_status' => 'publish' ] );
 		$this->as_mcp_user( [ 'content:read', 'content:write' ] );

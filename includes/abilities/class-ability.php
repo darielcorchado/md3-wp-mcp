@@ -16,6 +16,9 @@ abstract class Ability {
 	const PREFIX   = 'md3-wp-mcp/';
 	const CATEGORY = 'md3-wp-mcp';
 
+	/** Statuses visitors can see, or will at the scheduled time. */
+	const LIVE_STATUSES = [ 'publish', 'future', 'private' ];
+
 	/**
 	 * Ability name without the `md3-wp-mcp/` prefix.
 	 */
@@ -96,6 +99,22 @@ abstract class Ability {
 	 */
 	protected function object_permission( array $input ): bool|\WP_Error {
 		return true;
+	}
+
+	/**
+	 * Whether a post is live: published, scheduled or private.
+	 */
+	protected static function is_live( \WP_Post $post ): bool {
+		return in_array( $post->post_status, self::LIVE_STATUSES, true );
+	}
+
+	/**
+	 * Changing live content changes what visitors see, so it needs the
+	 * publish scope as well. A missing post passes here; execute() reports it.
+	 */
+	protected function require_publish_if_live( int $post_id ): true|\WP_Error {
+		$post = $post_id > 0 ? get_post( $post_id ) : null;
+		return $post && self::is_live( $post ) ? $this->require_scope( Scopes::PUBLISH ) : true;
 	}
 
 	/**

@@ -144,6 +144,9 @@ class Test_Oauth_Core extends Test_Case {
 		$this->assertSame( $first['private']->getKeyContents(), $second['private']->getKeyContents() );
 		$this->assertSame( $first['public']->getKeyContents(), $second['public']->getKeyContents() );
 		$this->assertSame( $first['encryption'], $second['encryption'] );
+		// Parsed once per request: the same key objects come back.
+		$this->assertSame( $first['private'], $second['private'] );
+		$this->assertSame( $first['public'], $second['public'] );
 
 		foreach ( [ Keys::OPT_PRIVATE, Keys::OPT_ENCRYPTION ] as $option ) {
 			$autoload = $wpdb->get_var( $wpdb->prepare( "SELECT autoload FROM {$wpdb->options} WHERE option_name = %s", $option ) );
@@ -312,6 +315,41 @@ class Test_Oauth_Core extends Test_Case {
 
 		$this->assertTrue( $client->supportsGrantType( 'refresh_token' ) );
 		$this->assertFalse( $client->supportsGrantType( 'client_credentials' ) );
+	}
+
+	public function test_client_repository_prefers_fresh_cimd_metadata_over_stored_row() {
+		global $wpdb;
+		$wpdb->insert(
+			Schema::table( 'clients' ),
+			[
+				'client_id'     => self::CIMD_URL,
+				'name'          => 'Old name',
+				'redirect_uris' => wp_json_encode( [ 'https://old.example.com/cb' ] ),
+				'type'          => 'cimd',
+				'completed'     => 1,
+				'created_at'    => gmdate( 'Y-m-d H:i:s' ),
+			]
+		);
+		$repo = new Client_Repository();
+
+		// The client published a new redirect URI: it is accepted at once.
+		$this->mock_cimd(
+			[
+				'client_id'     => self::CIMD_URL,
+				'client_name'   => 'New name',
+				'redirect_uris' => [ self::REDIRECT_URI ],
+			]
+		);
+		$client = $repo->getClientEntity( self::CIMD_URL );
+		$this->assertSame( 'New name', $client->getName() );
+		$this->assertSame( [ self::REDIRECT_URI ], $client->getRedirectUri() );
+
+		// The document can't be fetched (and isn't cached): the stored row still works.
+		delete_transient( 'md3_mcp_cimd_' . md5( self::CIMD_URL ) );
+		$this->mock_cimd( 'nope', 500 );
+		$client = $repo->getClientEntity( self::CIMD_URL );
+		$this->assertSame( 'Old name', $client->getName() );
+		$this->assertSame( [ 'https://old.example.com/cb' ], $client->getRedirectUri() );
 	}
 
 	public function test_scope_repository() {
@@ -588,6 +626,38 @@ class Test_Oauth_Core extends Test_Case {
 		$this->assertSame( 1, Tokens::revoke_all() );
 		$this->assertSame( [], Tokens::connections() );
 		$this->assertTrue( ( new Access_Token_Repository() )->isAccessTokenRevoked( $b_token->getIdentifier() ) );
+	}
+
+	public function test_connections_use_a_fixed_number_of_queries_and_newest_scopes() {
+		global $wpdb;
+		$user_id = $this->make_mcp_user();
+		$access  = Schema::table( 'access_tokens' );
+
+		$old = $this->issue_access_token( $this->insert_client( 'dcr-0', [ self::REDIRECT_URI ], 'Zero' ), $user_id, [ 'content:read' ] );
+		$wpdb->update( $access, [ 'created_at' => gmdate( 'Y-m-d H:i:s', time() - 600 ), 'last_used_at' => gmdate( 'Y-m-d H:i:s', time() - 300 ) ], [ 'id_hash' => hash( 'sha256', $old->getIdentifier() ) ] );
+		$this->issue_access_token( new Client_Entity( 'dcr-0', 'Zero', [ self::REDIRECT_URI ] ), $user_id, [ 'content:read', 'content:publish' ] );
+
+		$before = $wpdb->num_queries;
+		$one    = Tokens::connections();
+		$cost   = $wpdb->num_queries - $before;
+
+		$this->assertCount( 1, $one );
+		$this->assertSame( 'Zero', $one[0]['client_name'] );
+		$this->assertSame( [ 'content:read', 'content:publish' ], $one[0]['scopes'], 'scopes of the newest token' );
+		$this->assertSame( gmdate( 'Y-m-d H:i:s', time() - 600 ), $one[0]['created_at'], 'first token of the connection' );
+		$this->assertSame( gmdate( 'Y-m-d H:i:s', time() - 300 ), $one[0]['last_used_at'] );
+
+		for ( $i = 1; $i <= 4; $i++ ) {
+			$this->issue_access_token( $this->insert_client( "dcr-{$i}", [ self::REDIRECT_URI ], "Client {$i}" ), $user_id );
+		}
+		// A client without a row falls back to its ID for the name.
+		$this->issue_access_token( new Client_Entity( 'no-row', '', [ self::REDIRECT_URI ] ), $user_id );
+
+		$before = $wpdb->num_queries;
+		$six    = Tokens::connections();
+		$this->assertCount( 6, $six );
+		$this->assertSame( $cost, $wpdb->num_queries - $before );
+		$this->assertSame( 'no-row', array_column( $six, 'client_name', 'client_id' )['no-row'] );
 	}
 
 	public function test_prune_removes_expired_rows_and_stale_clients() {

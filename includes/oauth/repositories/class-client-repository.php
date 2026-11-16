@@ -10,7 +10,9 @@ use MD3\WPMCP\Schema;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Clients registered in the database (DCR, or approved CIMD), then CIMD URLs.
+ * DCR clients from the database; CIMD clients from their metadata document
+ * (cached a day), with the row saved on approval as the fallback when the
+ * document can't be fetched.
  */
 final class Client_Repository implements ClientRepositoryInterface {
 
@@ -18,14 +20,17 @@ final class Client_Repository implements ClientRepositoryInterface {
 		global $wpdb;
 
 		$row = $wpdb->get_row(
-			$wpdb->prepare( 'SELECT client_id, name, redirect_uris FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', $client_id )
+			$wpdb->prepare( 'SELECT client_id, name, redirect_uris, type FROM ' . Schema::table( 'clients' ) . ' WHERE client_id = %s', $client_id )
 		);
-		if ( $row ) {
+
+		// A stored CIMD row is a snapshot: the document may since have changed
+		// its redirect URIs, so it wins whenever it can be read.
+		$doc = ( ! $row || 'cimd' === $row->type ) ? Cimd::resolve( $client_id ) : null;
+
+		if ( null === $doc && $row ) {
 			$uris = json_decode( (string) $row->redirect_uris, true );
 			return new Client_Entity( $row->client_id, (string) $row->name, is_array( $uris ) ? array_filter( $uris, 'is_string' ) : [] );
 		}
-
-		$doc = Cimd::resolve( $client_id );
 		if ( null === $doc ) {
 			return null;
 		}

@@ -85,7 +85,7 @@ abstract class Test_Case extends WP_UnitTestCase {
 		$verifier     = wp_generate_password( 64, false );
 
 		// Each registration comes from a new IP, so tests that issue many
-		// tokens stay under the registration rate limit (10 per IP per hour).
+		// tokens stay under the registration rate limit (30 per IP per minute).
 		$_SERVER['REMOTE_ADDR'] = '2001:db8:7::' . dechex( ++self::$token_ip_counter );
 
 		$register = new \WP_REST_Request( 'POST', '/md3-wp-mcp/v1/oauth/register' );

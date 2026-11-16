@@ -42,7 +42,8 @@ final class Profile_Connections {
 				add_query_arg(
 					[
 						'action'    => 'md3_mcp_revoke',
-						'client_id' => $connection['client_id'],
+						// add_query_arg() doesn't encode values; a CIMD URL may hold `&` or `%`.
+						'client_id' => rawurlencode( $connection['client_id'] ),
 						'user_id'   => $connection['user_id'],
 						'return'    => 'profile',
 					],

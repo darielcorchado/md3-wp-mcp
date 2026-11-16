@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-15T02:12:44+00:00\n"
+"POT-Creation-Date: 2026-11-16T01:28:44+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: md3-wp-mcp\n"
@@ -36,86 +36,95 @@ msgstr ""
 msgid "Dariel Corchado, Jenrry Cordero"
 msgstr ""
 
-#: includes/abilities/class-ability.php:87
+#: includes/abilities/class-ability.php:90
 msgid "The access token does not grant the scope this tool needs."
 msgstr ""
 
-#: includes/abilities/class-ability.php:109
+#: includes/abilities/class-ability.php:128
 msgid "Content not found."
 msgstr ""
 
-#: includes/abilities/class-ability.php:112
-#: includes/abilities/class-content-writer.php:46
-#: includes/abilities/class-create-content.php:54
+#: includes/abilities/class-ability.php:131
+#: includes/abilities/class-content-writer.php:50
 #: includes/abilities/class-list-content.php:62
 msgid "This content type is not enabled for MCP."
 msgstr ""
 
 #. translators: %s: field name
-#: includes/abilities/class-content-writer.php:40
-#: includes/abilities/class-content-writer.php:167
+#: includes/abilities/class-content-writer.php:44
+#: includes/abilities/class-content-writer.php:178
 #, php-format
 msgid "Unknown field: %s"
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:51
+#: includes/abilities/class-content-writer.php:53
+msgid "You are not allowed to create this content type."
+msgstr ""
+
+#: includes/abilities/class-content-writer.php:58
 msgid "Status must be draft or pending. Publishing is not available."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:137
+#: includes/abilities/class-content-writer.php:148
 msgid "terms must map a taxonomy to a list of term IDs."
 msgstr ""
 
 #. translators: %s: taxonomy
-#: includes/abilities/class-content-writer.php:142
+#: includes/abilities/class-content-writer.php:153
 #, php-format
 msgid "Taxonomy \"%s\" is not available for this content type."
 msgstr ""
 
 #. translators: %s: taxonomy
-#: includes/abilities/class-content-writer.php:145
+#: includes/abilities/class-content-writer.php:156
 #, php-format
 msgid "You are not allowed to assign terms in \"%s\"."
 msgstr ""
 
 #. translators: 1: term ID 2: taxonomy
-#: includes/abilities/class-content-writer.php:149
+#: includes/abilities/class-content-writer.php:160
 #, php-format
 msgid "Term %1$s does not exist in %2$s."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:157
+#: includes/abilities/class-content-writer.php:168
 msgid "featured_media must be the ID of an image in the media library."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:163
+#: includes/abilities/class-content-writer.php:174
 msgid "seo must be an object."
 msgstr ""
 
+#: includes/abilities/class-content-writer.php:185
+msgid "language needs Polylang, which is not active on this site."
+msgstr ""
+
 #. translators: %s: field names
-#: includes/abilities/class-content-writer.php:174
+#: includes/abilities/class-content-writer.php:195
 #, php-format
 msgid "This content type does not support: %s"
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:180
+#: includes/abilities/class-content-writer.php:201
 msgid "parent must be an existing item of the same content type."
 msgstr ""
 
-#: includes/abilities/class-content-writer.php:188
+#: includes/abilities/class-content-writer.php:209
 msgid "Unknown page template for the active theme."
 msgstr ""
 
-#: includes/abilities/class-create-content.php:16
+#. translators: 1: language slug 2: valid slugs
+#: includes/abilities/class-content-writer.php:229
+#, php-format
+msgid "Unknown language \"%1$s\". Available: %2$s"
+msgstr ""
+
+#: includes/abilities/class-create-content.php:15
 msgid "Create content"
 msgstr ""
 
-#: includes/abilities/class-create-content.php:20
+#: includes/abilities/class-create-content.php:19
 msgid "Creates a draft or pending post or page. Publishing is not available."
-msgstr ""
-
-#: includes/abilities/class-create-content.php:58
-msgid "You are not allowed to create this content type."
 msgstr ""
 
 #: includes/abilities/class-create-term.php:16
@@ -164,9 +173,9 @@ msgid "Sets the language of a post or page and links it with its translations in
 msgstr ""
 
 #: includes/abilities/class-link-translations.php:65
-#: includes/abilities/class-set-featured-image.php:67
-#: includes/abilities/class-update-content.php:71
-#: includes/abilities/class-upload-media.php:85
+#: includes/abilities/class-set-featured-image.php:60
+#: includes/abilities/class-update-content.php:64
+#: includes/abilities/class-upload-media.php:93
 msgid "You are not allowed to edit this content."
 msgstr ""
 
@@ -190,12 +199,6 @@ msgstr ""
 msgid "This would replace or move an existing translation. Unlink it in wp-admin first."
 msgstr ""
 
-#. translators: 1: language slug 2: valid slugs
-#: includes/abilities/class-link-translations.php:187
-#, php-format
-msgid "Unknown language \"%1$s\". Available: %2$s"
-msgstr ""
-
 #: includes/abilities/class-list-content.php:17
 msgid "List content"
 msgstr ""
@@ -204,8 +207,8 @@ msgstr ""
 msgid "Lists posts, pages and other enabled content, including drafts, with filters and pagination."
 msgstr ""
 
-#: includes/abilities/class-list-content.php:91
-#: includes/abilities/class-list-content.php:96
+#: includes/abilities/class-list-content.php:93
+#: includes/abilities/class-list-content.php:98
 msgid "Pass a taxonomy of an enabled content type together with term_id."
 msgstr ""
 
@@ -277,7 +280,7 @@ msgstr ""
 msgid "Sets the featured image of a post or page to an image from the media library. Changing live content needs the publish scope."
 msgstr ""
 
-#: includes/abilities/class-set-featured-image.php:71
+#: includes/abilities/class-set-featured-image.php:64
 msgid "media_id must be the ID of an image in the media library."
 msgstr ""
 
@@ -329,7 +332,7 @@ msgstr ""
 msgid "Updates the given fields of a post or page. Changing live content needs the publish scope."
 msgstr ""
 
-#: includes/abilities/class-update-content.php:68
+#: includes/abilities/class-update-content.php:61
 msgid "Restore this content before editing it."
 msgstr ""
 
@@ -341,41 +344,41 @@ msgstr ""
 msgid "Adds an image (JPEG, PNG, WebP or GIF, up to 10 MB) to the media library, from a public URL or base64 data. Give exactly one of url or base64; base64 also needs filename."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:66
+#: includes/abilities/class-upload-media.php:74
 msgid "You are not allowed to upload files."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:72
+#: includes/abilities/class-upload-media.php:80
 msgid "Give exactly one of url or base64."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:75
+#: includes/abilities/class-upload-media.php:83
 msgid "filename is required with base64."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:104
-#: includes/abilities/class-upload-media.php:198
-#: includes/abilities/class-upload-media.php:205
+#: includes/abilities/class-upload-media.php:112
+#: includes/abilities/class-upload-media.php:206
+#: includes/abilities/class-upload-media.php:213
 msgid "The file is larger than 10 MB."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:124
+#: includes/abilities/class-upload-media.php:132
 msgid "Only JPEG, PNG, WebP and GIF images are accepted."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:172
+#: includes/abilities/class-upload-media.php:180
 msgid "url must start with http:// or https://."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:202
+#: includes/abilities/class-upload-media.php:210
 msgid "base64 is not valid base64 data."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:210
+#: includes/abilities/class-upload-media.php:218
 msgid "Could not create a temporary file."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:214
+#: includes/abilities/class-upload-media.php:222
 msgid "Could not write the temporary file."
 msgstr ""
 
@@ -476,7 +479,7 @@ msgstr ""
 msgid "Last used"
 msgstr ""
 
-#: includes/admin/class-profile-connections.php:56
+#: includes/admin/class-profile-connections.php:57
 #: includes/admin/views/tab-connections.php:36
 msgid "Revoke"
 msgstr ""
@@ -486,7 +489,7 @@ msgid "Content"
 msgstr ""
 
 #: includes/admin/class-settings-page.php:51
-#: includes/admin/class-settings-page.php:214
+#: includes/admin/class-settings-page.php:218
 msgid "Security"
 msgstr ""
 
@@ -507,40 +510,44 @@ msgid "Unknown action."
 msgstr ""
 
 #: includes/admin/class-settings-page.php:68
-#: includes/admin/class-settings-page.php:191
+#: includes/admin/class-settings-page.php:194
 msgid "You are not allowed to do this."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:170
+#: includes/admin/class-settings-page.php:172
 msgid "Settings saved."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:171
+#: includes/admin/class-settings-page.php:173
 msgid "Connection revoked."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:172
-msgid "All connections revoked."
-msgstr ""
-
-#: includes/admin/class-settings-page.php:173
-msgid "Keys rotated. Every client has to connect again."
-msgstr ""
-
 #: includes/admin/class-settings-page.php:174
-msgid "Keys are set in wp-config.php and were not changed; every connection was revoked."
+msgid "No active connection matched, so nothing was revoked."
 msgstr ""
 
 #: includes/admin/class-settings-page.php:175
+msgid "All connections revoked."
+msgstr ""
+
+#: includes/admin/class-settings-page.php:176
+msgid "Keys rotated. Every client has to connect again."
+msgstr ""
+
+#: includes/admin/class-settings-page.php:177
+msgid "Keys are set in wp-config.php and were not changed; every connection was revoked."
+msgstr ""
+
+#: includes/admin/class-settings-page.php:178
 msgid "Checks finished."
 msgstr ""
 
-#: includes/admin/class-settings-page.php:184
+#: includes/admin/class-settings-page.php:187
 msgid "Never"
 msgstr ""
 
 #. translators: %s: link to the Security tab.
-#: includes/admin/class-settings-page.php:213
+#: includes/admin/class-settings-page.php:217
 #, php-format
 msgid "The MCP user is not set, so no AI client can connect. Choose one on the %s tab."
 msgstr ""

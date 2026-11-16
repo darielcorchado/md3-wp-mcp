@@ -68,7 +68,7 @@ final class Link_Translations extends Ability {
 		$languages = array_map( 'strval', (array) pll_languages_list() );
 		$language  = (string) ( $input['language'] ?? '' );
 		if ( ! in_array( $language, $languages, true ) ) {
-			return self::bad_language( $language, $languages );
+			return Content_Writer::unknown_language( $language, $languages );
 		}
 
 		$requested = (array) ( $input['translations'] ?? [] );
@@ -81,7 +81,7 @@ final class Link_Translations extends Ability {
 		foreach ( $requested as $lang => $translation_id ) {
 			$lang = (string) $lang;
 			if ( ! in_array( $lang, $languages, true ) ) {
-				return self::bad_language( $lang, $languages );
+				return Content_Writer::unknown_language( $lang, $languages );
 			}
 			$other = $this->load_post( (int) $translation_id );
 			if ( is_wp_error( $other ) ) {
@@ -112,7 +112,7 @@ final class Link_Translations extends Ability {
 
 		// Changing the language of live content changes what visitors see.
 		foreach ( $items as $lang => $item ) {
-			if ( pll_get_post_language( $item->ID ) !== $lang && in_array( $item->post_status, [ 'publish', 'future', 'private' ], true ) ) {
+			if ( pll_get_post_language( $item->ID ) !== $lang && self::is_live( $item ) ) {
 				$scope = $this->require_scope( Scopes::PUBLISH );
 				if ( true !== $scope ) {
 					return $scope;
@@ -175,17 +175,6 @@ final class Link_Translations extends Ability {
 			'md3_mcp_translation_conflict',
 			__( 'This would replace or move an existing translation. Unlink it in wp-admin first.', 'md3-wp-mcp' ),
 			[ 'status' => 409 ]
-		);
-	}
-
-	/**
-	 * @param string[] $languages Valid slugs.
-	 */
-	private static function bad_language( string $language, array $languages ): \WP_Error {
-		return new \WP_Error(
-			'md3_mcp_bad_language',
-			sprintf( /* translators: 1: language slug 2: valid slugs */ __( 'Unknown language "%1$s". Available: %2$s', 'md3-wp-mcp' ), $language, implode( ', ', $languages ) ),
-			[ 'status' => 400 ]
 		);
 	}
 }

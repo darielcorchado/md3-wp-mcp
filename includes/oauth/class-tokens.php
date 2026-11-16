@@ -88,41 +88,47 @@ final class Tokens {
 		$now     = self::utc( time() );
 		$user    = null === $user_id ? '' : $wpdb->prepare( ' AND user_id = %d', $user_id );
 
+		// Live connections, with the client's name.
 		$pairs = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT client_id, user_id FROM {$refresh} WHERE revoked = 0 AND expires_at > %s{$user}
-				UNION
-				SELECT client_id, user_id FROM {$access} WHERE revoked = 0 AND expires_at > %s{$user}",
+				"SELECT p.client_id, p.user_id, c.name FROM (
+					SELECT client_id, user_id FROM {$refresh} WHERE revoked = 0 AND expires_at > %s{$user}
+					UNION
+					SELECT client_id, user_id FROM {$access} WHERE revoked = 0 AND expires_at > %s{$user}
+				) p LEFT JOIN {$clients} c ON c.client_id = p.client_id",
 				$now,
 				$now
 			)
 		);
+		if ( ! $pairs ) {
+			return [];
+		}
+
+		// Per connection, over all its access tokens: first issued, last used,
+		// and the scopes of the newest (scope strings never contain a newline).
+		$rows  = $wpdb->get_results(
+			"SELECT client_id, user_id, MIN(created_at) AS created_at, MAX(last_used_at) AS last_used_at,
+				SUBSTRING_INDEX(GROUP_CONCAT(scopes ORDER BY created_at DESC SEPARATOR '\\n'), '\\n', 1) AS scopes
+			FROM {$access} WHERE 1 = 1{$user} GROUP BY client_id, user_id"
+		);
+		$stats = [];
+		foreach ( $rows as $row ) {
+			$stats[ $row->user_id . "\0" . $row->client_id ] = $row;
+		}
 
 		$connections = [];
 		foreach ( $pairs as $pair ) {
-			$stats  = $wpdb->get_row(
-				$wpdb->prepare(
-					"SELECT MIN(created_at) AS created_at, MAX(last_used_at) AS last_used_at FROM {$access} WHERE client_id = %s AND user_id = %d",
-					$pair->client_id,
-					$pair->user_id
-				)
-			);
-			$scopes = (string) $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT scopes FROM {$access} WHERE client_id = %s AND user_id = %d ORDER BY created_at DESC LIMIT 1",
-					$pair->client_id,
-					$pair->user_id
-				)
-			);
-			$name   = (string) $wpdb->get_var( $wpdb->prepare( "SELECT name FROM {$clients} WHERE client_id = %s", $pair->client_id ) );
+			$stat   = $stats[ $pair->user_id . "\0" . $pair->client_id ] ?? null;
+			$name   = (string) ( $pair->name ?? '' );
+			$scopes = (string) ( $stat->scopes ?? '' );
 
 			$connections[] = [
 				'client_id'    => $pair->client_id,
 				'client_name'  => '' !== $name ? $name : $pair->client_id,
 				'user_id'      => (int) $pair->user_id,
 				'scopes'       => '' === $scopes ? [] : explode( ' ', $scopes ),
-				'created_at'   => (string) ( $stats->created_at ?? '' ),
-				'last_used_at' => $stats->last_used_at ?? null,
+				'created_at'   => (string) ( $stat->created_at ?? '' ),
+				'last_used_at' => $stat->last_used_at ?? null,
 			];
 		}
 

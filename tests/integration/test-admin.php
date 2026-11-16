@@ -182,6 +182,66 @@ class Test_Admin extends Test_Case {
 		$this->assertSame( [], Tokens::connections() );
 	}
 
+	/**
+	 * Gives an issued connection a CIMD-style client ID with percent-encoding and `&`.
+	 */
+	private function rename_client( string $from, string $to ): void {
+		global $wpdb;
+		foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens' ] as $table ) {
+			$wpdb->update( Schema::table( $table ), [ 'client_id' => $to ], [ 'client_id' => $from ] );
+		}
+	}
+
+	public function test_revoke_from_connections_tab_keeps_odd_client_ids_intact() {
+		$this->as_admin();
+		$a  = $this->issue_token();
+		$id = 'https://app.example.com/oauth/client%2Fmeta.json?a=1&b=%20x';
+		$this->rename_client( $a['client_id'], $id );
+		$this->issue_token();
+
+		$location = $this->submit( 'md3_mcp_revoke', [ 'client_id' => $id, 'user_id' => Settings::mcp_user_id() ] );
+		$this->assertStringContainsString( 'md3_notice=revoked', $location );
+		$this->assertCount( 1, Tokens::connections() );
+		$this->assertNotSame( $id, Tokens::connections()[0]['client_id'] );
+	}
+
+	public function test_revoke_that_matches_nothing_says_so() {
+		$this->as_admin();
+		$this->issue_token();
+
+		$location = $this->submit( 'md3_mcp_revoke', [ 'client_id' => 'no-such-client', 'user_id' => Settings::mcp_user_id() ] );
+		$this->assertStringContainsString( 'md3_notice=not_revoked', $location );
+		$this->assertCount( 1, Tokens::connections() );
+		$this->assertArrayHasKey( 'not_revoked', Settings_Page::notice_messages() );
+	}
+
+	public function test_profile_revoke_link_round_trips_odd_client_ids() {
+		$a  = $this->issue_token();
+		$id = 'https://app.example.com/oauth/client%2Fmeta.json?a=1&b=%20x';
+		$this->rename_client( $a['client_id'], $id );
+		$mcp = Settings::mcp_user_id();
+		wp_set_current_user( $mcp );
+
+		ob_start();
+		Profile_Connections::render( get_userdata( $mcp ) );
+		$html = (string) ob_get_clean();
+		$this->assertSame( 1, preg_match( '/href="([^"]*md3_mcp_revoke[^"]*)"/', $html, $m ) );
+		parse_str( (string) wp_parse_url( html_entity_decode( $m[1] ), PHP_URL_QUERY ), $query );
+		$this->assertSame( $id, $query['client_id'] );
+		$this->assertSame( 'profile', $query['return'] );
+
+		// Follow the link: PHP decodes the query string into $_GET / $_REQUEST.
+		$_GET     = $query;
+		$_REQUEST = $query;
+		try {
+			Settings_Page::dispatch( 'md3_mcp_revoke' );
+			$this->fail( 'The handler did not redirect.' );
+		} catch ( Md3_Admin_Redirect $redirect ) {
+			$this->assertStringContainsString( 'md3_notice=revoked', $redirect->getMessage() );
+		}
+		$this->assertSame( [], Tokens::connections() );
+	}
+
 	public function test_mcp_user_may_revoke_own_connection_only() {
 		$token   = $this->issue_token();
 		$mcp     = Settings::mcp_user_id();

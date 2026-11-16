@@ -1,22 +1,21 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: MD3 WP MCP 0.1.0\n"
-"Report-Msgid-Bugs-To: \n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
+"POT-Creation-Date: 2026-11-16T01:28:44+00:00\n"
+"PO-Revision-Date: 2026-11-14T12:00:00+00:00\n"
 "Last-Translator: Dariel Corchado\n"
 "Language-Team: Spanish (Spain)\n"
+"Language: es_ES\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-15T01:33:54+00:00\n"
-"PO-Revision-Date: 2026-11-14T12:00:00+00:00\n"
-"Language: es_ES\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Domain: md3-wp-mcp\n"
 
 #. Plugin Name of the plugin
-#: md3-wp-mcp.php
-#: includes/abilities/class-registry.php:63
+#: md3-wp-mcp.php includes/abilities/class-registry.php:63
 #: includes/oauth/class-authorize.php:445
 msgid "MD3 WP MCP"
 msgstr "MD3 WP MCP"
@@ -28,97 +27,127 @@ msgstr "https://www.md3digitalsolutions.com"
 
 #. Description of the plugin
 #: md3-wp-mcp.php
-msgid "A content-only MCP server for WordPress with its own OAuth 2.1 server, so AI assistants can read, draft and publish posts and pages without ever touching code, users or settings."
-msgstr "Un servidor MCP solo de contenido para WordPress, con su propio servidor OAuth 2.1, para que los asistentes de IA puedan leer, redactar y publicar entradas y páginas sin tocar nunca el código, los usuarios ni los ajustes."
+msgid ""
+"A content-only MCP server for WordPress with its own OAuth 2.1 server, so AI "
+"assistants can read, draft and publish posts and pages without ever touching "
+"code, users or settings."
+msgstr ""
+"Un servidor MCP solo de contenido para WordPress, con su propio servidor "
+"OAuth 2.1, para que los asistentes de IA puedan leer, redactar y publicar "
+"entradas y páginas sin tocar nunca el código, los usuarios ni los ajustes."
 
 #. Author of the plugin
 #: md3-wp-mcp.php
 msgid "Dariel Corchado, Jenrry Cordero"
 msgstr "Dariel Corchado, Jenrry Cordero"
 
-#: includes/abilities/class-ability.php:87
+#: includes/abilities/class-ability.php:90
 msgid "The access token does not grant the scope this tool needs."
-msgstr "El token de acceso no concede el alcance que necesita esta herramienta."
+msgstr ""
+"El token de acceso no concede el alcance que necesita esta herramienta."
 
-#: includes/abilities/class-ability.php:109
+#: includes/abilities/class-ability.php:128
 msgid "Content not found."
 msgstr "No se encontró el contenido."
 
-#: includes/abilities/class-ability.php:112
-#: includes/abilities/class-content-writer.php:46
-#: includes/abilities/class-create-content.php:54
+#: includes/abilities/class-ability.php:131
+#: includes/abilities/class-content-writer.php:50
 #: includes/abilities/class-list-content.php:62
 msgid "This content type is not enabled for MCP."
 msgstr "Este tipo de contenido no está habilitado para MCP."
 
 #. translators: %s: field name
-#: includes/abilities/class-content-writer.php:40
-#: includes/abilities/class-content-writer.php:167
+#: includes/abilities/class-content-writer.php:44
+#: includes/abilities/class-content-writer.php:178
 #, php-format
 msgid "Unknown field: %s"
 msgstr "Campo desconocido: %s"
 
-#: includes/abilities/class-content-writer.php:51
-msgid "Status must be draft or pending. Publishing is not available."
-msgstr "El estado debe ser borrador o pendiente. La publicación no está disponible."
+#: includes/abilities/class-content-writer.php:53
+msgid "You are not allowed to create this content type."
+msgstr "Usted no tiene permiso para crear este tipo de contenido."
 
-#: includes/abilities/class-content-writer.php:137
+#: includes/abilities/class-content-writer.php:58
+msgid "Status must be draft or pending. Publishing is not available."
+msgstr ""
+"El estado debe ser borrador o pendiente. La publicación no está disponible."
+
+#: includes/abilities/class-content-writer.php:148
 msgid "terms must map a taxonomy to a list of term IDs."
 msgstr "terms debe asignar una taxonomía a una lista de ID de términos."
 
 #. translators: %s: taxonomy
-#: includes/abilities/class-content-writer.php:142
+#: includes/abilities/class-content-writer.php:153
 #, php-format
 msgid "Taxonomy \"%s\" is not available for this content type."
 msgstr "La taxonomía \"%s\" no está disponible para este tipo de contenido."
 
+#. translators: %s: taxonomy
+#: includes/abilities/class-content-writer.php:156
+#, php-format
+msgid "You are not allowed to assign terms in \"%s\"."
+msgstr "Usted no tiene permiso para asignar términos en \"%s\"."
+
 #. translators: 1: term ID 2: taxonomy
-#: includes/abilities/class-content-writer.php:149
+#: includes/abilities/class-content-writer.php:160
 #, php-format
 msgid "Term %1$s does not exist in %2$s."
 msgstr "El término %1$s no existe en %2$s."
 
-#: includes/abilities/class-content-writer.php:157
+#: includes/abilities/class-content-writer.php:168
 msgid "featured_media must be the ID of an image in the media library."
-msgstr "featured_media debe ser el ID de una imagen de la biblioteca de medios."
+msgstr ""
+"featured_media debe ser el ID de una imagen de la biblioteca de medios."
 
-#: includes/abilities/class-content-writer.php:163
+#: includes/abilities/class-content-writer.php:174
 msgid "seo must be an object."
 msgstr "seo debe ser un objeto."
 
+#: includes/abilities/class-content-writer.php:185
+msgid "language needs Polylang, which is not active on this site."
+msgstr "language necesita Polylang, que no está activo en este sitio."
+
 #. translators: %s: field names
-#: includes/abilities/class-content-writer.php:174
+#: includes/abilities/class-content-writer.php:195
 #, php-format
 msgid "This content type does not support: %s"
 msgstr "Este tipo de contenido no admite: %s"
 
-#: includes/abilities/class-content-writer.php:180
+#: includes/abilities/class-content-writer.php:201
 msgid "parent must be an existing item of the same content type."
 msgstr "parent debe ser un elemento existente del mismo tipo de contenido."
 
-#: includes/abilities/class-content-writer.php:188
+#: includes/abilities/class-content-writer.php:209
 msgid "Unknown page template for the active theme."
 msgstr "Plantilla de página desconocida para el tema activo."
 
-#: includes/abilities/class-create-content.php:16
+#. translators: 1: language slug 2: valid slugs
+#: includes/abilities/class-content-writer.php:229
+#, php-format
+msgid "Unknown language \"%1$s\". Available: %2$s"
+msgstr "Idioma desconocido \"%1$s\". Disponibles: %2$s"
+
+#: includes/abilities/class-create-content.php:15
 msgid "Create content"
 msgstr "Crear contenido"
 
-#: includes/abilities/class-create-content.php:20
+#: includes/abilities/class-create-content.php:19
 msgid "Creates a draft or pending post or page. Publishing is not available."
-msgstr "Crea una entrada o página en borrador o pendiente. La publicación no está disponible."
-
-#: includes/abilities/class-create-content.php:58
-msgid "You are not allowed to create this content type."
-msgstr "Usted no tiene permiso para crear este tipo de contenido."
+msgstr ""
+"Crea una entrada o página en borrador o pendiente. La publicación no está "
+"disponible."
 
 #: includes/abilities/class-create-term.php:16
 msgid "Create term"
 msgstr "Crear término"
 
 #: includes/abilities/class-create-term.php:20
-msgid "Creates a category, tag or other term in a taxonomy used by the enabled content types."
-msgstr "Crea una categoría, etiqueta u otro término en una taxonomía usada por los tipos de contenido habilitados."
+msgid ""
+"Creates a category, tag or other term in a taxonomy used by the enabled "
+"content types."
+msgstr ""
+"Crea una categoría, etiqueta u otro término en una taxonomía usada por los "
+"tipos de contenido habilitados."
 
 #: includes/abilities/class-create-term.php:64
 #: includes/abilities/class-list-terms.php:45
@@ -142,8 +171,12 @@ msgid "Get content"
 msgstr "Obtener contenido"
 
 #: includes/abilities/class-get-content.php:17
-msgid "Returns one post or page in full: raw block content, terms, featured image, SEO fields and translations."
-msgstr "Devuelve una entrada o página completa: contenido de bloques sin procesar, términos, imagen destacada, campos SEO y traducciones."
+msgid ""
+"Returns one post or page in full: raw block content, terms, featured image, "
+"SEO fields and translations."
+msgstr ""
+"Devuelve una entrada o página completa: contenido de bloques sin procesar, "
+"términos, imagen destacada, campos SEO y traducciones."
 
 #: includes/abilities/class-get-content.php:41
 msgid "You are not allowed to access this content."
@@ -154,15 +187,24 @@ msgid "Link translations"
 msgstr "Vincular traducciones"
 
 #: includes/abilities/class-link-translations.php:23
-msgid "Sets the language of a post or page and links it with its translations in other languages (Polylang)."
-msgstr "Establece el idioma de una entrada o página y la vincula con sus traducciones en otros idiomas (Polylang)."
+msgid ""
+"Sets the language of a post or page and links it with its translations in "
+"other languages (Polylang)."
+msgstr ""
+"Establece el idioma de una entrada o página y la vincula con sus "
+"traducciones en otros idiomas (Polylang)."
 
 #: includes/abilities/class-link-translations.php:65
-#: includes/abilities/class-set-featured-image.php:67
-#: includes/abilities/class-update-content.php:71
-#: includes/abilities/class-upload-media.php:85
+#: includes/abilities/class-set-featured-image.php:60
+#: includes/abilities/class-update-content.php:64
+#: includes/abilities/class-upload-media.php:93
 msgid "You are not allowed to edit this content."
 msgstr "Usted no tiene permiso para editar este contenido."
+
+#: includes/abilities/class-link-translations.php:76
+msgid "The translation in the item's own language must be the item itself."
+msgstr ""
+"La traducción en el idioma del propio elemento debe ser el mismo elemento."
 
 #: includes/abilities/class-link-translations.php:91
 msgid "You are not allowed to edit a translation you listed."
@@ -176,48 +218,69 @@ msgstr "Las traducciones deben ser del mismo tipo de contenido."
 msgid "Each translation must be a different item."
 msgstr "Cada traducción debe ser un elemento distinto."
 
-#. translators: 1: language slug 2: valid slugs
-#: includes/abilities/class-link-translations.php:187
-#, php-format
-msgid "Unknown language \"%1$s\". Available: %2$s"
-msgstr "Idioma desconocido \"%1$s\". Disponibles: %2$s"
+#: includes/abilities/class-link-translations.php:176
+msgid ""
+"This would replace or move an existing translation. Unlink it in wp-admin "
+"first."
+msgstr ""
+"Esto reemplazaría o movería una traducción existente. Desvincúlela primero "
+"en wp-admin."
 
 #: includes/abilities/class-list-content.php:17
 msgid "List content"
 msgstr "Listar contenido"
 
 #: includes/abilities/class-list-content.php:21
-msgid "Lists posts, pages and other enabled content, including drafts, with filters and pagination."
-msgstr "Lista entradas, páginas y otro contenido habilitado, incluidos los borradores, con filtros y paginación."
+msgid ""
+"Lists posts, pages and other enabled content, including drafts, with filters "
+"and pagination."
+msgstr ""
+"Lista entradas, páginas y otro contenido habilitado, incluidos los "
+"borradores, con filtros y paginación."
 
-#: includes/abilities/class-list-content.php:91
-#: includes/abilities/class-list-content.php:96
+#: includes/abilities/class-list-content.php:93
+#: includes/abilities/class-list-content.php:98
 msgid "Pass a taxonomy of an enabled content type together with term_id."
-msgstr "Indique una taxonomía de un tipo de contenido habilitado junto con term_id."
+msgstr ""
+"Indique una taxonomía de un tipo de contenido habilitado junto con term_id."
 
 #: includes/abilities/class-list-post-types.php:15
 msgid "List post types"
 msgstr "Listar tipos de contenido"
 
 #: includes/abilities/class-list-post-types.php:19
-msgid "Lists the content types this site lets you work with, with the taxonomies and features each supports."
-msgstr "Lista los tipos de contenido con los que este sitio le permite trabajar, con las taxonomías y funciones que admite cada uno."
+msgid ""
+"Lists the content types this site lets you work with, with the taxonomies "
+"and features each supports."
+msgstr ""
+"Lista los tipos de contenido con los que este sitio le permite trabajar, con "
+"las taxonomías y funciones que admite cada uno."
 
 #: includes/abilities/class-list-terms.php:13
 msgid "List terms"
 msgstr "Listar términos"
 
 #: includes/abilities/class-list-terms.php:17
-msgid "Lists the terms (categories, tags, ...) of a taxonomy used by the enabled content types."
-msgstr "Lista los términos (categorías, etiquetas, ...) de una taxonomía usada por los tipos de contenido habilitados."
+msgid ""
+"Lists the terms (categories, tags, ...) of a taxonomy used by the enabled "
+"content types."
+msgstr ""
+"Lista los términos (categorías, etiquetas, ...) de una taxonomía usada por "
+"los tipos de contenido habilitados."
 
 #: includes/abilities/class-publish-content.php:15
 msgid "Publish content"
 msgstr "Publicar contenido"
 
 #: includes/abilities/class-publish-content.php:19
-msgid "Publishes a post or page now, or schedules it with a date. A date without a UTC offset is read in the site time zone; a past date publishes immediately with that date."
-msgstr "Publica una entrada o página ahora, o la programa con una fecha. Una fecha sin desfase UTC se interpreta en la zona horaria del sitio; una fecha pasada se publica de inmediato con esa fecha."
+msgid ""
+"Publishes a post or page now, or schedules it with a date. A date without a "
+"UTC offset is read in the site time zone; a past date publishes immediately "
+"with that date."
+msgstr ""
+"Publica una entrada o página ahora, o la programa con una fecha. Una fecha "
+"sin desfase UTC se interpreta en la zona horaria del sitio; una fecha pasada "
+"se publica de inmediato con esa fecha."
 
 #: includes/abilities/class-publish-content.php:57
 msgid "You are not allowed to publish this content."
@@ -260,10 +323,15 @@ msgid "Set featured image"
 msgstr "Establecer imagen destacada"
 
 #: includes/abilities/class-set-featured-image.php:19
-msgid "Sets the featured image of a post or page to an image from the media library. Changing live content needs the publish scope."
-msgstr "Establece la imagen destacada de una entrada o página con una imagen de la biblioteca de medios. Cambiar contenido publicado requiere el alcance de publicación."
+msgid ""
+"Sets the featured image of a post or page to an image from the media "
+"library. Changing live content needs the publish scope."
+msgstr ""
+"Establece la imagen destacada de una entrada o página con una imagen de la "
+"biblioteca de medios. Cambiar contenido publicado requiere el alcance de "
+"publicación."
 
-#: includes/abilities/class-set-featured-image.php:71
+#: includes/abilities/class-set-featured-image.php:64
 msgid "media_id must be the ID of an image in the media library."
 msgstr "media_id debe ser el ID de una imagen de la biblioteca de medios."
 
@@ -272,8 +340,12 @@ msgid "Trash content"
 msgstr "Enviar contenido a la papelera"
 
 #: includes/abilities/class-trash-content.php:19
-msgid "Moves a post or page to the trash. It can be restored; nothing is permanently deleted."
-msgstr "Mueve una entrada o página a la papelera. Se puede restaurar; nada se elimina de forma permanente."
+msgid ""
+"Moves a post or page to the trash. It can be restored; nothing is "
+"permanently deleted."
+msgstr ""
+"Mueve una entrada o página a la papelera. Se puede restaurar; nada se "
+"elimina de forma permanente."
 
 #: includes/abilities/class-trash-content.php:53
 msgid "You are not allowed to trash this content."
@@ -284,8 +356,11 @@ msgid "This content is already in the trash."
 msgstr "Este contenido ya está en la papelera."
 
 #: includes/abilities/class-trash-content.php:61
-msgid "The trash is disabled on this site, so content cannot be trashed safely."
-msgstr "La papelera está desactivada en este sitio, por lo que el contenido no se puede enviar a ella de forma segura."
+msgid ""
+"The trash is disabled on this site, so content cannot be trashed safely."
+msgstr ""
+"La papelera está desactivada en este sitio, por lo que el contenido no se "
+"puede enviar a ella de forma segura."
 
 #: includes/abilities/class-trash-content.php:65
 msgid "The content could not be moved to the trash."
@@ -297,7 +372,9 @@ msgstr "Despublicar contenido"
 
 #: includes/abilities/class-unpublish-content.php:19
 msgid "Moves content back to draft (published, scheduled, pending or private)."
-msgstr "Devuelve el contenido a borrador (publicado, programado, pendiente o privado)."
+msgstr ""
+"Devuelve el contenido a borrador (publicado, programado, pendiente o "
+"privado)."
 
 #: includes/abilities/class-unpublish-content.php:54
 msgid "You are not allowed to unpublish this content."
@@ -312,58 +389,81 @@ msgid "Update content"
 msgstr "Actualizar contenido"
 
 #: includes/abilities/class-update-content.php:19
-msgid "Updates the given fields of a post or page. Changing live content needs the publish scope."
-msgstr "Actualiza los campos indicados de una entrada o página. Cambiar contenido publicado requiere el alcance de publicación."
+msgid ""
+"Updates the given fields of a post or page. Changing live content needs the "
+"publish scope."
+msgstr ""
+"Actualiza los campos indicados de una entrada o página. Cambiar contenido "
+"publicado requiere el alcance de publicación."
+
+#: includes/abilities/class-update-content.php:61
+msgid "Restore this content before editing it."
+msgstr "Restaure este contenido antes de editarlo."
 
 #: includes/abilities/class-upload-media.php:25
 msgid "Upload media"
 msgstr "Subir medios"
 
 #: includes/abilities/class-upload-media.php:29
-msgid "Adds an image (JPEG, PNG, WebP or GIF, up to 10 MB) to the media library, from a public URL or base64 data. Give exactly one of url or base64; base64 also needs filename."
-msgstr "Agrega una imagen (JPEG, PNG, WebP o GIF, de hasta 10 MB) a la biblioteca de medios, desde una URL pública o datos en base64. Indique exactamente uno de url o base64; base64 también requiere filename."
+msgid ""
+"Adds an image (JPEG, PNG, WebP or GIF, up to 10 MB) to the media library, "
+"from a public URL or base64 data. Give exactly one of url or base64; base64 "
+"also needs filename."
+msgstr ""
+"Agrega una imagen (JPEG, PNG, WebP o GIF, de hasta 10 MB) a la biblioteca de "
+"medios, desde una URL pública o datos en base64. Indique exactamente uno de "
+"url o base64; base64 también requiere filename."
 
-#: includes/abilities/class-upload-media.php:66
+#: includes/abilities/class-upload-media.php:74
 msgid "You are not allowed to upload files."
 msgstr "Usted no tiene permiso para subir archivos."
 
-#: includes/abilities/class-upload-media.php:72
+#: includes/abilities/class-upload-media.php:80
 msgid "Give exactly one of url or base64."
 msgstr "Indique exactamente uno de url o base64."
 
-#: includes/abilities/class-upload-media.php:75
+#: includes/abilities/class-upload-media.php:83
 msgid "filename is required with base64."
 msgstr "filename es obligatorio con base64."
 
-#: includes/abilities/class-upload-media.php:104
-#: includes/abilities/class-upload-media.php:198
-#: includes/abilities/class-upload-media.php:205
+#: includes/abilities/class-upload-media.php:112
+#: includes/abilities/class-upload-media.php:206
+#: includes/abilities/class-upload-media.php:213
 msgid "The file is larger than 10 MB."
 msgstr "El archivo supera los 10 MB."
 
-#: includes/abilities/class-upload-media.php:124
+#: includes/abilities/class-upload-media.php:132
 msgid "Only JPEG, PNG, WebP and GIF images are accepted."
 msgstr "Solo se aceptan imágenes JPEG, PNG, WebP y GIF."
 
-#: includes/abilities/class-upload-media.php:172
+#: includes/abilities/class-upload-media.php:180
 msgid "url must start with http:// or https://."
 msgstr "url debe comenzar con http:// o https://."
 
-#: includes/abilities/class-upload-media.php:202
+#: includes/abilities/class-upload-media.php:210
 msgid "base64 is not valid base64 data."
 msgstr "base64 no son datos base64 válidos."
 
-#: includes/abilities/class-upload-media.php:210
+#: includes/abilities/class-upload-media.php:218
 msgid "Could not create a temporary file."
 msgstr "No se pudo crear un archivo temporal."
 
-#: includes/abilities/class-upload-media.php:214
+#: includes/abilities/class-upload-media.php:222
 msgid "Could not write the temporary file."
 msgstr "No se pudo escribir el archivo temporal."
 
+#: includes/admin/class-diagnostics.php:70
+msgid "OAuth keys load"
+msgstr "Las claves OAuth se cargan"
+
+#: includes/admin/class-diagnostics.php:76
+msgid "Loaded."
+msgstr "Cargadas."
+
 #: includes/admin/class-diagnostics.php:80
 msgid "Protected resource metadata is served and not cached"
-msgstr "Los metadatos del recurso protegido se sirven y no se almacenan en caché"
+msgstr ""
+"Los metadatos del recurso protegido se sirven y no se almacenan en caché"
 
 #. translators: 1: HTTP status, 2: Content-Type, 3: Cache-Control.
 #: includes/admin/class-diagnostics.php:92
@@ -412,12 +512,17 @@ msgstr "Recibido."
 #. translators: %d: HTTP status.
 #: includes/admin/class-diagnostics.php:153
 #, php-format
-msgid "Not received (HTTP %d). The web server strips the Authorization header; pass it to PHP."
-msgstr "No recibido (HTTP %d). El servidor web elimina el encabezado Authorization; páselo a PHP."
+msgid ""
+"Not received (HTTP %d). The web server strips the Authorization header; pass "
+"it to PHP."
+msgstr ""
+"No recibido (HTTP %d). El servidor web elimina el encabezado Authorization; "
+"páselo a PHP."
 
 #: includes/admin/class-diagnostics.php:158
 msgid "The authorize page is reachable and not cached or redirected"
-msgstr "La página de autorización es accesible y no está en caché ni redirigida"
+msgstr ""
+"La página de autorización es accesible y no está en caché ni redirigida"
 
 #. translators: %d: HTTP status.
 #: includes/admin/class-diagnostics.php:166
@@ -450,7 +555,7 @@ msgstr "Acceso"
 msgid "Last used"
 msgstr "Último uso"
 
-#: includes/admin/class-profile-connections.php:56
+#: includes/admin/class-profile-connections.php:57
 #: includes/admin/views/tab-connections.php:36
 msgid "Revoke"
 msgstr "Revocar"
@@ -460,7 +565,7 @@ msgid "Content"
 msgstr "Contenido"
 
 #: includes/admin/class-settings-page.php:51
-#: includes/admin/class-settings-page.php:214
+#: includes/admin/class-settings-page.php:218
 msgid "Security"
 msgstr "Seguridad"
 
@@ -481,42 +586,57 @@ msgid "Unknown action."
 msgstr "Acción desconocida."
 
 #: includes/admin/class-settings-page.php:68
-#: includes/admin/class-settings-page.php:191
+#: includes/admin/class-settings-page.php:194
 msgid "You are not allowed to do this."
 msgstr "Usted no tiene permiso para hacer esto."
 
-#: includes/admin/class-settings-page.php:170
+#: includes/admin/class-settings-page.php:172
 msgid "Settings saved."
 msgstr "Ajustes guardados."
 
-#: includes/admin/class-settings-page.php:171
+#: includes/admin/class-settings-page.php:173
 msgid "Connection revoked."
 msgstr "Conexión revocada."
 
-#: includes/admin/class-settings-page.php:172
+#: includes/admin/class-settings-page.php:174
+msgid "No active connection matched, so nothing was revoked."
+msgstr "Ninguna conexión activa coincidía, así que no se revocó nada."
+
+#: includes/admin/class-settings-page.php:175
 msgid "All connections revoked."
 msgstr "Todas las conexiones fueron revocadas."
 
-#: includes/admin/class-settings-page.php:173
+#: includes/admin/class-settings-page.php:176
 msgid "Keys rotated. Every client has to connect again."
 msgstr "Claves rotadas. Todos los clientes deben volver a conectarse."
 
-#: includes/admin/class-settings-page.php:175
+#: includes/admin/class-settings-page.php:177
+msgid ""
+"Keys are set in wp-config.php and were not changed; every connection was "
+"revoked."
+msgstr ""
+"Las claves están definidas en wp-config.php y no se cambiaron; se revocaron "
+"todas las conexiones."
+
+#: includes/admin/class-settings-page.php:178
 msgid "Checks finished."
 msgstr "Comprobaciones finalizadas."
 
-#: includes/admin/class-settings-page.php:184
+#: includes/admin/class-settings-page.php:187
 msgid "Never"
 msgstr "Nunca"
 
 #. translators: %s: link to the Security tab.
-#: includes/admin/class-settings-page.php:213
+#: includes/admin/class-settings-page.php:217
 #, php-format
-msgid "The MCP user is not set, so no AI client can connect. Choose one on the %s tab."
-msgstr "El usuario MCP no está definido, por lo que ningún cliente de IA puede conectarse. Elija uno en la pestaña %s."
+msgid ""
+"The MCP user is not set, so no AI client can connect. Choose one on the %s "
+"tab."
+msgstr ""
+"El usuario MCP no está definido, por lo que ningún cliente de IA puede "
+"conectarse. Elija uno en la pestaña %s."
 
-#: includes/admin/views/consent.php:16
-#: includes/admin/views/consent.php:39
+#: includes/admin/views/consent.php:16 includes/admin/views/consent.php:39
 msgid "Connect an AI client"
 msgstr "Conectar un cliente de IA"
 
@@ -559,8 +679,12 @@ msgid "Claude (web, desktop, mobile)"
 msgstr "Claude (web, escritorio, móvil)"
 
 #: includes/admin/views/tab-connect.php:12
-msgid "Settings > Connectors > Add custom connector > paste the URL > Connect > sign in to WordPress and approve."
-msgstr "Ajustes > Conectores > Agregar conector personalizado > pegue la URL > Conectar > inicie sesión en WordPress y apruebe."
+msgid ""
+"Settings > Connectors > Add custom connector > paste the URL > Connect > "
+"sign in to WordPress and approve."
+msgstr ""
+"Ajustes > Conectores > Agregar conector personalizado > pegue la URL > "
+"Conectar > inicie sesión en WordPress y apruebe."
 
 #: includes/admin/views/tab-connect.php:13
 msgid "Claude Code"
@@ -575,8 +699,12 @@ msgid "ChatGPT"
 msgstr "ChatGPT"
 
 #: includes/admin/views/tab-connect.php:14
-msgid "Settings > Apps & Connectors > developer mode > create a connector with the URL, OAuth."
-msgstr "Ajustes > Apps y conectores > modo desarrollador > cree un conector con la URL y OAuth."
+msgid ""
+"Settings > Apps & Connectors > developer mode > create a connector with the "
+"URL, OAuth."
+msgstr ""
+"Ajustes > Apps y conectores > modo desarrollador > cree un conector con la "
+"URL y OAuth."
 
 #: includes/admin/views/tab-connect.php:15
 msgid "Gemini CLI"
@@ -591,8 +719,12 @@ msgid "Muse"
 msgstr "Muse"
 
 #: includes/admin/views/tab-connect.php:16
-msgid "Muse Code CLI: add a remote HTTP server with the URL and sign in with OAuth. The consumer Muse app still needs checking."
-msgstr "Muse Code CLI: agregue un servidor HTTP remoto con la URL e inicie sesión con OAuth. La app Muse para consumidores aún debe comprobarse."
+msgid ""
+"Muse Code CLI: add a remote HTTP server with the URL and sign in with OAuth. "
+"The consumer Muse app still needs checking."
+msgstr ""
+"Muse Code CLI: agregue un servidor HTTP remoto con la URL e inicie sesión "
+"con OAuth. La app Muse para consumidores aún debe comprobarse."
 
 #: includes/admin/views/tab-connect.php:19
 msgid "MCP URL"
@@ -608,7 +740,8 @@ msgstr "Cómo"
 
 #: includes/admin/views/tab-connect.php:39
 msgid "These screens change often. Check each client when you connect it."
-msgstr "Estas pantallas cambian con frecuencia. Compruebe cada cliente al conectarlo."
+msgstr ""
+"Estas pantallas cambian con frecuencia. Compruebe cada cliente al conectarlo."
 
 #: includes/admin/views/tab-connect.php:43
 msgid "Copied."
@@ -639,17 +772,19 @@ msgid "The MCP user"
 msgstr "El usuario MCP"
 
 #: includes/admin/views/tab-content.php:41
-msgid "The saved author no longer exists or cannot edit posts, so new content falls back to the MCP user."
-msgstr "El autor guardado ya no existe o no puede editar entradas, por lo que el contenido nuevo se asigna al usuario MCP."
+msgid ""
+"The saved author no longer exists or cannot edit posts, so new content falls "
+"back to the MCP user."
+msgstr ""
+"El autor guardado ya no existe o no puede editar entradas, por lo que el "
+"contenido nuevo se asigna al usuario MCP."
 
-#: includes/admin/views/tab-log.php:21
-#: includes/admin/views/tab-log.php:22
+#: includes/admin/views/tab-log.php:21 includes/admin/views/tab-log.php:22
 #: includes/admin/views/tab-log.php:43
 msgid "Tool"
 msgstr "Herramienta"
 
-#: includes/admin/views/tab-log.php:23
-#: includes/admin/views/tab-log.php:45
+#: includes/admin/views/tab-log.php:23 includes/admin/views/tab-log.php:45
 #: includes/admin/views/tab-security.php:74
 msgid "Result"
 msgstr "Resultado"
@@ -658,8 +793,7 @@ msgstr "Resultado"
 msgid "Any result"
 msgstr "Cualquier resultado"
 
-#: includes/admin/views/tab-log.php:30
-#: includes/admin/views/tab-log.php:31
+#: includes/admin/views/tab-log.php:30 includes/admin/views/tab-log.php:31
 msgid "Client ID"
 msgstr "ID de cliente"
 
@@ -696,8 +830,12 @@ msgid "— Not set —"
 msgstr "— Sin definir —"
 
 #: includes/admin/views/tab-security.php:28
-msgid "The only account AI clients can act as. Editors only; administrators are never allowed."
-msgstr "La única cuenta como la que pueden actuar los clientes de IA. Solo editores; los administradores nunca están permitidos."
+msgid ""
+"The only account AI clients can act as. Editors only; administrators are "
+"never allowed."
+msgstr ""
+"La única cuenta como la que pueden actuar los clientes de IA. Solo editores; "
+"los administradores nunca están permitidos."
 
 #: includes/admin/views/tab-security.php:32
 msgid "Automatic registration"
@@ -705,7 +843,9 @@ msgstr "Registro automático"
 
 #: includes/admin/views/tab-security.php:36
 msgid "Let AI clients register themselves (dynamic client registration)"
-msgstr "Permitir que los clientes de IA se registren por sí mismos (registro dinámico de clientes)"
+msgstr ""
+"Permitir que los clientes de IA se registren por sí mismos (registro "
+"dinámico de clientes)"
 
 #: includes/admin/views/tab-security.php:41
 msgid "MCP rate limit"
@@ -725,7 +865,8 @@ msgstr "Rotar claves"
 
 #: includes/admin/views/tab-security.php:55
 msgid "Rotating the keys signs every AI client out. Continue?"
-msgstr "Rotar las claves cierra la sesión de todos los clientes de IA. ¿Continuar?"
+msgstr ""
+"Rotar las claves cierra la sesión de todos los clientes de IA. ¿Continuar?"
 
 #: includes/admin/views/tab-security.php:60
 msgid "Revoke all connections"
@@ -740,8 +881,12 @@ msgid "Diagnostics"
 msgstr "Diagnóstico"
 
 #: includes/admin/views/tab-security.php:64
-msgid "Checks that the web server and any page cache let the sign-in flow through. The site requests itself."
-msgstr "Comprueba que el servidor web y cualquier caché de páginas dejen pasar el flujo de inicio de sesión. El sitio se solicita a sí mismo."
+msgid ""
+"Checks that the web server and any page cache let the sign-in flow through. "
+"The site requests itself."
+msgstr ""
+"Comprueba que el servidor web y cualquier caché de páginas dejen pasar el "
+"flujo de inicio de sesión. El sitio se solicita a sí mismo."
 
 #: includes/admin/views/tab-security.php:68
 msgid "Run checks"
@@ -787,8 +932,7 @@ msgstr "Se requiere autenticación."
 msgid "This token is not for the MCP user."
 msgstr "Este token no es del usuario MCP."
 
-#: includes/mcp/class-server.php:81
-#: includes/oauth/class-oauth.php:122
+#: includes/mcp/class-server.php:81 includes/oauth/class-oauth.php:122
 msgid "Too many requests. Try again shortly."
 msgstr "Demasiadas solicitudes. Inténtelo de nuevo en breve."
 
@@ -825,26 +969,39 @@ msgid "The authorization could not be completed."
 msgstr "No se pudo completar la autorización."
 
 #: includes/oauth/class-authorize.php:219
-msgid "This connection request is not valid. Start connecting again from your AI app."
-msgstr "Esta solicitud de conexión no es válida. Vuelva a iniciar la conexión desde su app de IA."
+msgid ""
+"This connection request is not valid. Start connecting again from your AI "
+"app."
+msgstr ""
+"Esta solicitud de conexión no es válida. Vuelva a iniciar la conexión desde "
+"su app de IA."
 
 #: includes/oauth/class-authorize.php:227
-msgid "No MCP user is set up yet. An administrator must choose the MCP user in Settings > MD3 WP MCP."
-msgstr "Aún no se ha configurado un usuario MCP. Un administrador debe elegir el usuario MCP en Ajustes > MD3 WP MCP."
+msgid ""
+"No MCP user is set up yet. An administrator must choose the MCP user in "
+"Settings > MD3 WP MCP."
+msgstr ""
+"Aún no se ha configurado un usuario MCP. Un administrador debe elegir el "
+"usuario MCP en Ajustes > MD3 WP MCP."
 
 #. translators: %s: login name of the MCP user.
 #: includes/oauth/class-authorize.php:238
 #, php-format
 msgid "Only the MCP user can approve connections. Sign in as %s to connect."
-msgstr "Solo el usuario MCP puede aprobar conexiones. Inicie sesión como %s para conectar."
+msgstr ""
+"Solo el usuario MCP puede aprobar conexiones. Inicie sesión como %s para "
+"conectar."
 
 #: includes/oauth/class-authorize.php:240
 msgid "Log out and sign in as that user"
 msgstr "Cierre la sesión e inicie sesión como ese usuario"
 
 #: includes/oauth/class-authorize.php:264
-msgid "This approval page has expired. Start connecting again from your AI app."
-msgstr "Esta página de aprobación ha caducado. Vuelva a iniciar la conexión desde su app de IA."
+msgid ""
+"This approval page has expired. Start connecting again from your AI app."
+msgstr ""
+"Esta página de aprobación ha caducado. Vuelva a iniciar la conexión desde su "
+"app de IA."
 
 #: includes/oauth/class-bearer-guard.php:126
 msgid "The access token is invalid, expired or revoked."
@@ -863,8 +1020,12 @@ msgid "The body must be a JSON object."
 msgstr "El cuerpo debe ser un objeto JSON."
 
 #: includes/oauth/class-registration.php:59
-msgid "This site has too many registered clients. Ask an administrator to remove unused connections."
-msgstr "Este sitio tiene demasiados clientes registrados. Pida a un administrador que elimine las conexiones sin usar."
+msgid ""
+"This site has too many registered clients. Ask an administrator to remove "
+"unused connections."
+msgstr ""
+"Este sitio tiene demasiados clientes registrados. Pida a un administrador "
+"que elimine las conexiones sin usar."
 
 #: includes/oauth/class-registration.php:81
 msgid "The client could not be registered."
@@ -875,8 +1036,12 @@ msgid "redirect_uris must be a non-empty list."
 msgstr "redirect_uris debe ser una lista no vacía."
 
 #: includes/oauth/class-registration.php:111
-msgid "A redirect URI is not allowed. Use https on a public host, http on localhost or 127.0.0.1, or an allowed app scheme."
-msgstr "No se permite una URI de redirección. Use https en un host público, http en localhost o 127.0.0.1, o un esquema de app permitido."
+msgid ""
+"A redirect URI is not allowed. Use https on a public host, http on localhost "
+"or 127.0.0.1, or an allowed app scheme."
+msgstr ""
+"No se permite una URI de redirección. Use https en un host público, http en "
+"localhost o 127.0.0.1, o un esquema de app permitido."
 
 #. translators: %d: maximum number of redirect URIs.
 #: includes/oauth/class-registration.php:118
@@ -890,7 +1055,8 @@ msgstr "client_name debe ser una cadena de texto."
 
 #: includes/oauth/class-registration.php:138
 msgid "Only the authorization_code and refresh_token grants are supported."
-msgstr "Solo se admiten los tipos de concesión authorization_code y refresh_token."
+msgstr ""
+"Solo se admiten los tipos de concesión authorization_code y refresh_token."
 
 #: includes/oauth/class-registration.php:143
 msgid "Only the code response type is supported."
@@ -912,36 +1078,13 @@ msgstr "No se pudo emitir el token."
 msgid "The token and client_id parameters are required."
 msgstr "Los parámetros token y client_id son obligatorios."
 
-#. translators: %s: taxonomy
-#: includes/abilities/class-content-writer.php:145
-#, php-format
-msgid "You are not allowed to assign terms in \"%s\"."
-msgstr "Usted no tiene permiso para asignar términos en \"%s\"."
-
-#: includes/abilities/class-link-translations.php:76
-msgid "The translation in the item's own language must be the item itself."
-msgstr "La traducción en el idioma del propio elemento debe ser el mismo elemento."
-
-#: includes/abilities/class-link-translations.php:176
-msgid "This would replace or move an existing translation. Unlink it in wp-admin first."
-msgstr "Esto reemplazaría o movería una traducción existente. Desvincúlela primero en wp-admin."
-
-#: includes/abilities/class-update-content.php:68
-msgid "Restore this content before editing it."
-msgstr "Restaure este contenido antes de editarlo."
-
-#: includes/admin/class-diagnostics.php:70
-msgid "OAuth keys load"
-msgstr "Las claves OAuth se cargan"
-
-#: includes/admin/class-diagnostics.php:76
-msgid "Loaded."
-msgstr "Cargadas."
-
-#: includes/admin/class-settings-page.php:174
-msgid "Keys are set in wp-config.php and were not changed; every connection was revoked."
-msgstr "Las claves están definidas en wp-config.php y no se cambiaron; se revocaron todas las conexiones."
-
 #: md3-wp-mcp.php:51
-msgid "MD3 WP MCP requires PHP 8.2 or newer and WordPress 6.9 or newer (the Abilities API), or the plugin's vendor folder is missing: install the release build. The plugin is inactive until the requirements are met."
-msgstr "MD3 WP MCP requiere PHP 8.2 o superior y WordPress 6.9 o superior (la Abilities API), o falta la carpeta vendor del plugin: instale la versión de distribución. El plugin permanece inactivo hasta que se cumplan los requisitos."
+msgid ""
+"MD3 WP MCP requires PHP 8.2 or newer and WordPress 6.9 or newer (the "
+"Abilities API), or the plugin's vendor folder is missing: install the "
+"release build. The plugin is inactive until the requirements are met."
+msgstr ""
+"MD3 WP MCP requiere PHP 8.2 o superior y WordPress 6.9 o superior (la "
+"Abilities API), o falta la carpeta vendor del plugin: instale la versión de "
+"distribución. El plugin permanece inactivo hasta que se cumplan los "
+"requisitos."
