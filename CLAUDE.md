@@ -1,0 +1,81 @@
+# CLAUDE.md
+
+<!-- synced-with: 8cc8c12 -->
+<!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
+
+MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
+
+- What it does and how to set it up: [README.md](README.md)
+- Why it is built this way, and the security model: [docs/design.md](docs/design.md)
+- How to change, test and release it: [docs/development.md](docs/development.md)
+
+## Commands
+
+```bash
+composer install                       # once; also installs WordPress core into tests/wp/ (ignored)
+bin/test.sh                            # all tests: PHPUnit in Docker, PHP 8.2 + MySQL 8
+bin/test.sh --filter <test or class>   # one test or class
+bin/build-zip.sh                       # release zip
+bin/sync-to-site.sh <site-repo>        # production build into a site's wp-content/plugins/
+```
+
+If the first `bin/test.sh` after starting Docker fails with `db_connect_fail`, run it again (MySQL wasn't ready).
+
+## Layout
+
+```
+md3-wp-mcp.php          Header, constants, requirement checks, boots Plugin on plugins_loaded
+uninstall.php           Drops the tables, options and transients
+includes/
+  class-plugin.php      boot(): schema upgrade, abilities, MCP server, OAuth, cleanup cron, admin
+  class-schema.php      Tables {prefix}md3_mcp_{clients,auth_codes,access_tokens,refresh_tokens,log}; DB_VERSION
+  class-settings.php    Options md3_wp_mcp_{post_types,default_author,security} with defaults
+  class-content-sanitizer.php  kses + block checks for every write
+  class-rate-limiter.php, class-audit-log.php, class-cleanup.php
+  abilities/            One class per MCP tool, extends Ability; Registry lists them.
+                        Content_Writer (shared create/update, Brevo opt-out) and Content_Formatter (output)
+  auth/                 Identity, Request_Context (per-request token identity), Scopes
+  mcp/                  Server (creates the adapter server, transport permission), Error_Handler
+  oauth/                league/oauth2-server wiring: Discovery, Registration (DCR), Cimd, Authorize
+                        (consent), Token_Endpoint, Bearer_Guard, Keys, Tokens; entities/, repositories/
+  admin/                Settings_Page (tabs in views/), Diagnostics, Profile_Connections
+languages/              .pot, es_ES .po/.mo
+tests/integration/      PHPUnit tests, one file per area; helpers in tests/helpers/class-test-case.php
+docs/                   design.md, implementation-plan.md, development.md
+```
+
+## How a tool call is checked
+
+1. `Bearer_Guard` on `determine_current_user` sets the user from our access token, **only** on the `/md3-wp-mcp/mcp` route, and stores the identity in `Request_Context`.
+2. `rest_request_before_callbacks` refuses that identity on every other route.
+3. `Mcp\Server::transport_permission()`: an identity from our token, the current user is `Settings::mcp_user_id()` (which returns 0 for a user with `manage_options`), and the per-token rate limit.
+4. `Ability::check_permission()`: the token's scope, then `object_permission()` (post type enabled, WordPress capability).
+
+## Rules that must not break
+
+- Content only. No tool touches code, plugins, themes, users, settings or arbitrary post meta.
+- Every ability is registered with `meta.mcp.public = false`, so it shows only on our server. Never switch off the adapter's default server; other plugins use it.
+- Tokens work only on the MCP route. A cookie or Application Password is never accepted on it.
+- The MCP user is an Editor and never an administrator (`manage_options` is refused, checked at read time).
+- Every write goes through `Content_Sanitizer` (`wp_kses_post` even with `unfiltered_html`).
+- Tools have no `author` input; the author comes from the "Author for new content" setting.
+- Trash only, never a permanent delete. `trash-content` refuses when the site's trash is disabled.
+- Changing live content (published, scheduled, private) also needs `content:publish`.
+- Content created or published over MCP never sends the Brevo web push.
+
+## Conventions
+
+- PHP 8.2, namespace `MD3\WPMCP\…`, WordPress coding standards (tabs). Files are `class-<name>.php`, loaded by Composer's classmap over `includes/`.
+- Text domain `md3-wp-mcp` on every string people see. Error codes are `md3_mcp_*`. Options start with `md3_wp_mcp_`, transients with `md3_mcp_`.
+- Filters: `md3_wp_mcp_client_ip`, `md3_wp_mcp_redirect_schemes`, `md3_mcp_trash_enabled`.
+- Write the failing test first. Tests use `Test_Case` helpers: `as_mcp_user()`, `run_ability()`, `issue_token()`, `serve()`, `mcp_call()`.
+- New tool: class in `includes/abilities/`, add to `Registry::abilities()`, test it, add it to the README and design.md tool tables.
+- Schema change: edit `Schema`, increase `Schema::DB_VERSION`. New table or option: add it to `uninstall.php`.
+- Changed strings: regenerate the `.pot`, translate `es_ES.po`, compile the `.mo` (commands in docs/development.md).
+- Release: increase the version in both the header and `MD3_WP_MCP_VERSION`, and add a CHANGELOG entry.
+
+## Git
+
+- Branches `feat/MD3-XX-short-name` from `master`. Commit messages `MD3-XX Imperative sentence`.
+- Dariel Corchado is the only author. Don't add `Co-Authored-By` trailers to commits.
+- `vendor/` and `tests/wp/` are not committed. Sites get a built copy through `bin/sync-to-site.sh`.
