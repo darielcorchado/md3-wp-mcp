@@ -86,7 +86,9 @@ Every new feature is built with the superpowers skills, in this order:
 3. `superpowers:test-driven-development` while you build it (with `superpowers:executing-plans` or `superpowers:subagent-driven-development`): a failing test first, every time.
 4. `superpowers:verification-before-completion`: run `bin/test.sh` and read the output before saying anything works.
 5. `superpowers:requesting-code-review`, plus `/code-review` and `/security-review` on the branch. Fix what they confirm, with a test for each fix.
-6. `superpowers:finishing-a-development-branch`: run the `sync-claude-md` skill, then open the pull request to `master`.
+6. `superpowers:finishing-a-development-branch`: run the `sync-claude-md` skill, then ask Dariel to approve the commit (see Git). Open the pull request to `master` only after he approves.
+
+These skills commit after every task. In this repo they don't: the Git rules below override them.
 
 ## Testing a change
 
@@ -105,5 +107,7 @@ On a server, also check that `/md3-mcp/upload/*` is not page-cached and that a 1
 ## Git
 
 - Branches `feat/MD3-XX-short-name` from `master`. Commit messages `MD3-XX Imperative sentence`.
+- **One commit per feature.** The design doc, plan, code, tests, docs and translations all go in that one commit, and review fixes are folded into it. If the work needs a checkpoint while building, squash it before asking for approval.
+- **Never commit or push without Dariel's approval.** When the feature is done and `bin/test.sh` passes, show him what changed (files and a short summary) and the commit message, then wait. Commit, push and open the pull request only after he says yes. Approval covers that one commit; ask again for the next one.
 - Dariel Corchado is the only author. Don't add `Co-Authored-By` trailers to commits.
 - `vendor/` and `tests/wp/` are not committed. Sites get a built copy through `bin/sync-to-site.sh`.
