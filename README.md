@@ -129,31 +129,14 @@ That is 14 tools, or 13 without Polylang. Content and excerpts always pass throu
 ## Development
 
 ```bash
+composer install                 # once: dependencies, and WordPress core for the tests
 bin/test.sh                      # PHPUnit in Docker (PHP 8.2 + MySQL 8)
 bin/test.sh --filter Test_I18n   # one test class
+bin/sync-to-site.sh <site-repo>  # try the build on a site
+bin/build-zip.sh                 # release zip
 ```
 
-Run `composer install` once first. `bin/test.sh` does it when `vendor/` is missing.
-
-### Building a release zip
-
-```bash
-bin/build-zip.sh                 # writes md3-wp-mcp-<version>.zip in the repo root
-bin/sync-to-site.sh <site-repo>  # copies the same build into <site-repo>/wp-content/plugins/md3-wp-mcp/
-```
-
-The build keeps only what `.distignore` allows and runs `composer install --no-dev --optimize-autoloader` in a staged copy. The site repo gets the built copy, `vendor/` included.
-
-### Translations
-
-The text domain is `md3-wp-mcp`. Spanish (Spain), es_ES, is in `languages/`. After changing strings, regenerate the template and compile the translation:
-
-```bash
-docker compose -f docker-compose.test.yml run --rm php wp i18n make-pot . languages/md3-wp-mcp.pot --exclude=vendor,tests --allow-root
-docker compose -f docker-compose.test.yml run --rm php wp i18n make-mo languages --allow-root
-```
-
-See `docs/design.md` for the full design.
+The full flow (writing tests, trying a change on a site, adding a tool, schema changes, translations and releasing) is in [docs/development.md](docs/development.md). The design is in [docs/design.md](docs/design.md).
 
 ## License
 
