@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-<!-- synced-with: f0fc54e -->
+<!-- synced-with: e72193f -->
 <!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
 
 MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
@@ -76,6 +76,31 @@ docs/                   design.md, implementation-plan.md, development.md
 - Schema change: edit `Schema`, increase `Schema::DB_VERSION`. New table or option: add it to `uninstall.php`.
 - Changed strings: regenerate the `.pot`, translate `es_ES.po`, compile the `.mo` (commands in docs/development.md).
 - Release: increase the version in both the header and `MD3_WP_MCP_VERSION`, and add a CHANGELOG entry.
+
+## Building a feature
+
+Every new feature is built with the superpowers skills, in this order:
+
+1. `superpowers:brainstorming`: read the Jira ticket, settle the design and every "decision needed" with the user before writing code.
+2. `superpowers:writing-plans`: a step-by-step plan from that design.
+3. `superpowers:test-driven-development` while you build it (with `superpowers:executing-plans` or `superpowers:subagent-driven-development`): a failing test first, every time.
+4. `superpowers:verification-before-completion`: run `bin/test.sh` and read the output before saying anything works.
+5. `superpowers:requesting-code-review`, plus `/code-review` and `/security-review` on the branch. Fix what they confirm, with a test for each fix.
+6. `superpowers:finishing-a-development-branch`: run the `sync-claude-md` skill, then open the pull request to `master`.
+
+## Testing a change
+
+1. **Tests:** `bin/test.sh` must pass with no `[ERROR]` lines. Tests can't see the web server, the page cache or the AI clients, so also:
+2. **Local site:** `bin/sync-to-site.sh <path to the md3digitalsolutions repo>`, then open any wp-admin page at http://localhost:8080 (this runs the schema upgrade). `WP_ENVIRONMENT_TYPE` is `local` there, so plain HTTP is allowed. Connect Claude Code (`claude mcp add --transport http md3 http://localhost:8080/wp-json/md3-wp-mcp/mcp`, then `/mcp`) or the MCP Inspector and call the tools you changed. Check wp-admin and the **Log** tab.
+3. **Staging (GridPane):** sync into the site repo, commit and deploy. Run Diagnostics, then the same calls from claude.ai.
+
+The upload link end to end: ask the AI to set an image attached in the chat as the featured image of a draft. Open the link, upload the image and say it's done. The AI calls `get-upload`, then `set-featured-image`. Then check:
+- opening the link again says it was already used;
+- an unused link expires after 10 minutes;
+- an SVG or a non-image is refused, and the same page then takes a real image;
+- the Log tab shows `create-upload-link` and `upload-link` entries.
+
+On a server, also check that `/md3-mcp/upload/*` is not page-cached and that a 10 MB multipart POST to it gets through the firewall and PHP's limits.
 
 ## Git
 
