@@ -603,6 +603,15 @@ class Test_Upload_Links extends Test_Case {
 		$this->assertSame( 2, $all['pages'] );
 	}
 
+	public function test_media_output_includes_caption_and_description() {
+		$this->connect( [ 'content:read' ] );
+		self::factory()->attachment->create( [ 'post_mime_type' => 'image/png', 'post_title' => 'Dog', 'post_excerpt' => 'A caption', 'post_content' => 'A description', 'file' => '2026/11/dog.png' ] );
+
+		$media = $this->run_ability( 'list-media', [] )['media'][0];
+		$this->assertSame( 'A caption', $media['caption'] );
+		$this->assertSame( 'A description', $media['description'] );
+	}
+
 	public function test_list_media_needs_read_scope_and_upload_rights() {
 		$this->connect( [ 'content:read' ] );
 		$this->assertTrue( ( new List_Media() )->check_permission( [] ) );

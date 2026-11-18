@@ -111,21 +111,23 @@ final class Content_Formatter {
 	 * An image in the media library, as upload-media, get-upload and
 	 * list-media return it.
 	 *
-	 * @return array{id:int,title:string,filename:string,url:string,mime:string,width:int,height:int,alt:string,date:string}
+	 * @return array{id:int,title:string,filename:string,url:string,mime:string,width:int,height:int,alt:string,caption:string,description:string,date:string}
 	 */
 	public static function media( int $id ): array {
 		$meta = wp_get_attachment_metadata( $id );
 		$post = get_post( $id );
 		return [
-			'id'       => $id,
-			'title'    => $post ? $post->post_title : '',
-			'filename' => wp_basename( (string) get_post_meta( $id, '_wp_attached_file', true ) ),
-			'url'      => (string) wp_get_attachment_url( $id ),
-			'mime'     => (string) get_post_mime_type( $id ),
-			'width'    => (int) ( $meta['width'] ?? 0 ),
-			'height'   => (int) ( $meta['height'] ?? 0 ),
-			'alt'      => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
-			'date'     => $post ? mysql_to_rfc3339( $post->post_date_gmt ) : '',
+			'id'          => $id,
+			'title'       => $post ? $post->post_title : '',
+			'filename'    => wp_basename( (string) get_post_meta( $id, '_wp_attached_file', true ) ),
+			'url'         => (string) wp_get_attachment_url( $id ),
+			'mime'        => (string) get_post_mime_type( $id ),
+			'width'       => (int) ( $meta['width'] ?? 0 ),
+			'height'      => (int) ( $meta['height'] ?? 0 ),
+			'alt'         => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
+			'caption'     => $post ? $post->post_excerpt : '',
+			'description' => $post ? $post->post_content : '',
+			'date'        => $post ? mysql_to_rfc3339( $post->post_date_gmt ) : '',
 		];
 	}
 
