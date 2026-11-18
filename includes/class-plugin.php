@@ -24,6 +24,7 @@ final class Plugin {
 		\WP\MCP\Core\McpAdapter::instance();
 
 		OAuth\OAuth::boot();
+		Uploads\Upload_Page::register();
 
 		Cleanup::register();
 		// Activation hooks don't run on every update path (sync, manual copy).

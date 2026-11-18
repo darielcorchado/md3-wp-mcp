@@ -408,10 +408,10 @@ class Test_Admin extends Test_Case {
 		}
 		include dirname( __DIR__, 2 ) . '/uninstall.php';
 
-		foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens', 'log' ] as $t ) {
+		foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens', 'log', 'uploads' ] as $t ) {
 			$this->assertContains( 'DROP TABLE IF EXISTS `' . Schema::table( $t ) . '`', $dropped, $t );
 		}
-		$this->assertCount( 5, $dropped );
+		$this->assertCount( 6, $dropped );
 		$this->assertFalse( get_option( 'md3_wp_mcp_security' ) );
 		foreach ( [ 'md3_wp_mcp_post_types', 'md3_wp_mcp_default_author', 'md3_wp_mcp_security', 'md3_wp_mcp_db_version', 'md3_wp_mcp_private_key', 'md3_wp_mcp_encryption_key' ] as $option ) {
 			$this->assertFalse( get_option( $option ), $option );

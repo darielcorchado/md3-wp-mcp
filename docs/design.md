@@ -322,6 +322,9 @@ The **permission check** for every ability requires:
 | `trash-content` / `restore-content` | delete | Trash only, never permanent delete. |
 | `list-terms` / `create-term` | read / write | Categories and tags, and any taxonomy of an allowed post type. Create takes name, slug, parent and language. |
 | `upload-media` | write | From a URL (with `wp_safe_remote_get()`, ≤ 10 MB, image types only: JPEG, PNG, WebP, GIF) or base64. Accepts alt text, title and caption. Converted to WebP like other uploads (MD3-25). |
+| `create-upload-link` | write | A one-time upload page for an image the user has in the chat (section 5.1). Accepts alt text, title, caption and `attach_to`; attaching to live content needs `content:publish`. |
+| `get-upload` | read | Status of a link from the same connection: `waiting`, `uploaded` or `expired`. Once uploaded, the image's ID, URL, size and alt text. |
+| `list-media` | read | Images in the media library, newest first, searched by title, caption, description and file name. `page` / `per_page` (≤ 50). Needs `upload_files`. |
 | `set-featured-image` | write | On an existing post with a media ID. |
 | `link-translations` | write | Only when Polylang is active: set a post's language and link it to its translation (`pll_set_post_language`, `pll_save_post_translations`). |
 
@@ -335,6 +338,27 @@ The **permission check** for every ability requires:
 - Brevo web push is turned off for content created or published over MCP, the same way `md3 post-import-es` does for translations. Turning it on is not exposed.
 
 The tool output also includes the ID and an edit link, so the user can check the work in wp-admin.
+
+### 5.1 Upload links
+
+A chat attachment has no public URL, and the model doesn't get its bytes (a 500 KB photo is about 700K characters of base64, far too large for a tool call). So `upload-media` can't take it. `create-upload-link` gives the AI a page on the site where the user uploads the image from the browser:
+
+1. The AI calls `create-upload-link` and shows the URL, `/md3-mcp/upload/<token>`.
+2. The user opens it, picks or drops the image, and submits.
+3. The AI calls `get-upload` with the `upload_id`, gets the media ID, and uses it.
+
+**The link is the permission (a capability URL).** Requiring the user to sign in as the MCP user would be safer in theory, but in practice the browser is signed in as an administrator, and the user would have to sign out first. A link with 256 bits of randomness, that works once, for 10 minutes, and only while its connection is live, is a smaller risk than that friction. Whoever is signed in in the browser doesn't matter: the upload always runs as the MCP user (`wp_set_current_user()` for the upload only, after the nonce is checked against the browser's own session).
+
+The rules:
+
+- The token is 43 random letters and digits, shown once. Only its SHA-256 hash is stored, as with OAuth tokens. The `upload_id` that the AI uses with `get-upload` is a separate value and does not open the page.
+- **Single use.** The link is taken with one atomic `UPDATE … WHERE status = 'waiting' AND expires_at > now`, so two requests can't both upload. A refused file (wrong type, too large, no file, a bad nonce) does not use up the link.
+- **Tied to the connection.** `get-upload` only finds links of the calling client and MCP user. The page refuses the link once the connection has no live token or the MCP user setting changed.
+- **The file rules of `upload-media`**, shared in `Upload_Media::prepare()`: up to 10 MB; JPEG, PNG, WebP or GIF, from the content (`wp_check_filetype_and_ext`), and the image must decode in the image editor, so a GIF header followed by PHP is refused. `upload_mimes` is limited to those four types during the upload.
+- `attach_to` live content needs `content:publish` when the link is made. If the content goes live afterwards, a link made without that scope can't attach to it.
+- **The page** is a standalone form with no theme and no scripts: `X-Frame-Options: DENY`, a CSP with `frame-ancestors 'none'` and `form-action 'self'`, `noindex`, `no-store` and `no-referrer`. The form has a WordPress nonce. The page is matched on the request path in `parse_request`, so no rewrite rule or flush is needed.
+- **Limits:** 10 links per connection every 10 minutes; 30 page requests per minute per IP.
+- **Audit log:** `create-upload-link` calls are logged like every tool. The page logs `upload-link` with `ok` / `used`, `denied` / `used`, `expired` or `connection`, and `error`. The daily cleanup logs each unused link that expired (`expired`), then deletes links a day after they expire.
 
 ## 6. Admin screens
 
@@ -364,7 +388,8 @@ There is one page, **Settings > MD3 WP MCP**, with these tabs. It needs `manage_
 | `auth_codes` | ID hash, client, user, scopes, PKCE challenge, redirect URI, expires, used |
 | `access_tokens` | ID hash, client, user, scopes, expires, revoked, last used |
 | `refresh_tokens` | ID hash, access token hash, client, user, scopes, expires, revoked, replaced by |
-| `log` | time, user, client, tool, object type and ID, result (`ok` / `denied` / `error`), short message, IP hash |
+| `log` | time, user, client, tool, object type and ID, result (`ok` / `denied` / `error` / `expired`), short message, IP hash |
+| `uploads` | public ID, token hash, client, user, publish scope held, `attach_to`, alt / title / caption (JSON), status (`waiting` / `uploading` / `uploaded` / `expired`), attachment ID, created, expires, used |
 
 - **Options:**
   - `md3_wp_mcp_post_types`;
@@ -372,7 +397,7 @@ There is one page, **Settings > MD3 WP MCP**, with these tabs. It needs `manage_
   - `md3_wp_mcp_security` (array: `mcp_user_id`, `dcr`, `mcp_rate_limit`);
   - `md3_wp_mcp_db_version`;
   - the key options when no wp-config constants are set.
-- **Cleanup:** a daily WP-Cron job deletes expired codes and tokens, unfinished clients, and log rows older than 90 days.
+- **Cleanup:** a daily WP-Cron job deletes expired codes and tokens, unfinished clients, upload links a day after they expire, and log rows older than 90 days.
 - Tables are created with `dbDelta` on activation and when `md3_wp_mcp_db_version` changes.
 
 ## 8. Coexisting with the rest of the site
@@ -381,7 +406,7 @@ There is one page, **Settings > MD3 WP MCP**, with these tabs. It needs `manage_
   - Novamira gives administrators full code access over MCP, so the ticket's "no code changes" promise only holds if **Novamira is deactivated on live** once MD3 WP MCP is working.
   - That decision belongs to the user and is outside this plugin.
 - **GridPane / Nginx:**
-  - Check that `Authorization` reaches PHP, and that `/.well-known/oauth-*`, `/md3-mcp/authorize` and `/wp-json/*` aren't cached by the Nginx page cache, redirected or challenged. Let's Encrypt only uses `/.well-known/acme-challenge/`.
+  - Check that `Authorization` reaches PHP, and that `/.well-known/oauth-*`, `/md3-mcp/authorize`, `/md3-mcp/upload/*` and `/wp-json/*` aren't cached by the Nginx page cache, redirected or challenged. Let's Encrypt only uses `/.well-known/acme-challenge/`.
   - The plugin sends `no-store` headers. A diagnostics box in the Security tab runs these checks against the site itself.
 - **Polylang:** `/md3-mcp/authorize` and `/.well-known/*` must not get a language prefix. Check that on staging.
 - **Rank Math:** fields are written with `update_post_meta` on the three allowlisted keys.
@@ -440,3 +465,4 @@ The user approved the recommendations:
 4. **Content published over MCP never sends the Brevo web push.** If a push is wanted, it's sent by hand from wp-admin.
 5. **The plugin lives in its own repository** (`md3-wp-mcp`), like `md3-google-reviews`. Sites get a built copy.
 6. **New content can be credited to a chosen author** through the "Author for new content" setting (4.5).
+7. **Upload links work without signing in** (MD3-31, section 5.1): the link is the permission, and the upload runs as the MCP user.

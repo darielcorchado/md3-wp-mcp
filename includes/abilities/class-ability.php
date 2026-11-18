@@ -121,7 +121,7 @@ abstract class Ability {
 	 * Loads a post that this tool may work with. Attachments and revisions are
 	 * never reachable; only the post types enabled in the settings are.
 	 */
-	protected function load_post( int $id ): \WP_Post|\WP_Error {
+	protected static function load_post( int $id ): \WP_Post|\WP_Error {
 		$post = $id > 0 ? get_post( $id ) : null;
 
 		if ( ! $post || in_array( $post->post_type, [ 'attachment', 'revision' ], true ) ) {

@@ -138,6 +138,29 @@ final class Tokens {
 	}
 
 	/**
+	 * Whether a connection still has a live (unrevoked, unexpired) access or
+	 * refresh token.
+	 */
+	public static function is_live_connection( string $client_id, int $user_id ): bool {
+		global $wpdb;
+		$now = self::utc( time() );
+		foreach ( [ 'access_tokens', 'refresh_tokens' ] as $table ) {
+			$found = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT 1 FROM ' . Schema::table( $table ) . ' WHERE client_id = %s AND user_id = %d AND revoked = 0 AND expires_at > %s LIMIT 1',
+					$client_id,
+					$user_id,
+					$now
+				)
+			);
+			if ( null !== $found ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Deletes expired codes and tokens, and unused clients (prune_clients()).
 	 *
 	 * Rotated refresh tokens stay until they expire, for reuse detection. An

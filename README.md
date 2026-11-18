@@ -103,10 +103,23 @@ Every tool is named `md3-wp-mcp/<tool>` and checks the scope, the allowed post t
 | `list-terms` | read | Categories, tags and other terms. |
 | `create-term` | write | Creates a term. |
 | `upload-media` | write | Adds a JPEG, PNG, WebP or GIF (up to 10 MB) from a URL or base64. |
+| `create-upload-link` | write | A one-time page where the user uploads an image from their browser, for images attached in the chat. |
+| `get-upload` | read | Whether the user has used an upload link yet, and the image once they have. |
+| `list-media` | read | Finds images in the media library by title, caption or file name. |
 | `set-featured-image` | write | Sets the featured image of an existing item. |
 | `link-translations` | write | Sets a post's language and links its translations. Only with Polylang active. |
 
-That is 14 tools, or 13 without Polylang. Content and excerpts always pass through `wp_kses_post`, so no scripts or event attributes get in. Post meta is limited to the Rank Math title, description and focus keyword. Content published over MCP never sends the Brevo web push.
+That is 17 tools, or 16 without Polylang. Content and excerpts always pass through `wp_kses_post`, so no scripts or event attributes get in. Post meta is limited to the Rank Math title, description and focus keyword. Content published over MCP never sends the Brevo web push.
+
+### Images attached in the chat
+
+An AI client can't pass on an image the user attached in the chat: it has no public URL, and the model doesn't get the file. Instead the AI calls `create-upload-link` and shows the link. The user opens it, drops the image on the page, and tells the AI. The AI calls `get-upload` to get the media ID, then `set-featured-image` or puts the image in the content.
+
+- The link is the permission: the user doesn't sign in. The image is always added as the MCP user, even when the browser is signed in as an administrator.
+- A link works once and expires after 10 minutes. It belongs to the connection that made it: `get-upload` only answers that connection, and the page stops working when that connection is revoked or the MCP user changes.
+- Only the SHA-256 hash of the link's token is stored. The page is never cached, framed or indexed, and sends no referrer.
+- The file rules are those of `upload-media`: JPEG, PNG, WebP or GIF, up to 10 MB, checked from the file's content, which must decode as an image.
+- Each connection can create 10 links every 10 minutes. The page allows 30 requests per minute per IP. The log records each link created, used, refused and expired.
 
 ## Security model
 
@@ -121,9 +134,10 @@ That is 14 tools, or 13 without Polylang. Content and excerpts always pass throu
 ## Server notes
 
 - **Authorization header.** The sign-in flow and every tool call need it. If the Diagnostics check says it is not received, pass it on to PHP in the web server configuration. On Nginx with PHP-FPM that is `fastcgi_param HTTP_AUTHORIZATION $http_authorization;`. On Apache, `SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1`.
-- **`/.well-known/` and `/wp-json/`.** Exclude `/.well-known/oauth-*`, `/md3-mcp/authorize` and `/wp-json/*` from the page cache, and make sure nothing redirects or challenges them. The plugin sends `no-store` headers, but a full-page cache can still ignore them. On GridPane, check the Nginx page cache first. Let's Encrypt only uses `/.well-known/acme-challenge/`, so it is not affected.
+- **`/.well-known/` and `/wp-json/`.** Exclude `/.well-known/oauth-*`, `/md3-mcp/authorize`, `/md3-mcp/upload/*` and `/wp-json/*` from the page cache, and make sure nothing redirects or challenges them. The plugin sends `no-store` headers, but a full-page cache can still ignore them. On GridPane, check the Nginx page cache first. Let's Encrypt only uses `/.well-known/acme-challenge/`, so it is not affected.
+- **Upload page.** `/md3-mcp/upload/<token>` is opened by the user's browser, so no bot exception is needed. It needs pretty permalinks, like the authorize page. Make sure firewall rules (such as GridPane's 7G) allow a `multipart/form-data` POST of up to 10 MB to that path, and that the web server's and PHP's upload limits (`client_max_body_size`, `upload_max_filesize`, `post_max_size`) are at least 10 MB.
 - **Reverse proxy or CDN.** The per-IP limits on registration, sign-in and tokens (30 per minute each) use `REMOTE_ADDR`. Behind a proxy that is the proxy's address, so every visitor shares one limit. Forwarded headers are not trusted by default, because any client can send them. If the proxy sets one reliably, return it from the `md3_wp_mcp_client_ip` filter, for example on Cloudflare: `add_filter( 'md3_wp_mcp_client_ip', fn ( $ip ) => $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $ip );`. Values that are not an IP address are ignored.
-- **Polylang.** `/md3-mcp/authorize` and `/.well-known/*` must not get a language prefix.
+- **Polylang.** `/md3-mcp/authorize`, `/md3-mcp/upload/*` and `/.well-known/*` must not get a language prefix.
 - **Other MCP plugins.** The plugin keeps its own issuer path (`/md3-mcp`) and does not touch the adapter's default server, so it can sit beside plugins that bundle the same adapter. Note that a plugin that gives administrators code access over MCP (such as Novamira) defeats the "content only" promise. Deactivate it once this plugin works.
 
 ## Development

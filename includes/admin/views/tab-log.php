@@ -23,7 +23,7 @@ $md3_filters = $view['filters'] + [
 	<label class="screen-reader-text" for="md3-log-result"><?php esc_html_e( 'Result', 'md3-wp-mcp' ); ?></label>
 	<select id="md3-log-result" name="result">
 		<option value=""><?php esc_html_e( 'Any result', 'md3-wp-mcp' ); ?></option>
-		<?php foreach ( [ 'ok', 'denied', 'error' ] as $md3_result ) : ?>
+		<?php foreach ( [ 'ok', 'denied', 'error', 'expired' ] as $md3_result ) : ?>
 			<option value="<?php echo esc_attr( $md3_result ); ?>" <?php selected( $md3_filters['result'], $md3_result ); ?>><?php echo esc_html( $md3_result ); ?></option>
 		<?php endforeach; ?>
 	</select>

@@ -85,19 +85,13 @@ final class Upload_Media extends Ability {
 
 		$parent = 0;
 		if ( ! empty( $input['attach_to'] ) ) {
-			$post = $this->load_post( (int) $input['attach_to'] );
-			if ( is_wp_error( $post ) ) {
-				return $post;
+			$parent = self::resolve_parent( (int) $input['attach_to'] );
+			if ( is_wp_error( $parent ) ) {
+				return $parent;
 			}
-			if ( ! current_user_can( 'edit_post', $post->ID ) ) {
-				return new \WP_Error( 'md3_mcp_forbidden', __( 'You are not allowed to edit this content.', 'md3-wp-mcp' ), [ 'status' => 403 ] );
-			}
-			$parent = $post->ID;
 		}
 
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-		require_once ABSPATH . 'wp-admin/includes/media.php';
-		require_once ABSPATH . 'wp-admin/includes/image.php';
+		self::load_admin_includes();
 
 		$tmp = $has_url ? $this->download( (string) $input['url'] ) : $this->decode( (string) $input['base64'] );
 		if ( is_wp_error( $tmp ) ) {
@@ -105,6 +99,43 @@ final class Upload_Media extends Ability {
 		}
 
 		$name = sanitize_file_name( wp_basename( (string) ( $input['filename'] ?? wp_parse_url( (string) $input['url'], PHP_URL_PATH ) ) ) );
+		$name = self::prepare( $tmp, $name );
+		if ( is_wp_error( $name ) ) {
+			return $name;
+		}
+
+		return self::insert( $tmp, $name, $input, $parent );
+	}
+
+	/**
+	 * The post an upload is attached to: one this tool may work with and the
+	 * current user can edit.
+	 *
+	 * @return int|\WP_Error Post ID.
+	 */
+	public static function resolve_parent( int $id ): int|\WP_Error {
+		$post = self::load_post( $id );
+		if ( is_wp_error( $post ) ) {
+			return $post;
+		}
+		if ( ! current_user_can( 'edit_post', $post->ID ) ) {
+			return new \WP_Error( 'md3_mcp_forbidden', __( 'You are not allowed to edit this content.', 'md3-wp-mcp' ), [ 'status' => 403 ] );
+		}
+		return $post->ID;
+	}
+
+	/**
+	 * Checks a temp file before it is added: the size, and that its real
+	 * content is a JPEG, PNG, WebP or GIF image. The temp file is deleted when
+	 * it is refused.
+	 *
+	 * @param string $tmp  Temp file path.
+	 * @param string $name Sanitized file name; may lack an extension.
+	 * @return string|\WP_Error The file name to store it under. Error data
+	 *         has the HTTP status (413 too large, 415 wrong type).
+	 */
+	public static function prepare( string $tmp, string $name ): string|\WP_Error {
+		self::load_admin_includes();
 
 		$size = (int) filesize( $tmp );
 		if ( $size > self::MAX_BYTES ) {
@@ -131,16 +162,38 @@ final class Upload_Media extends Ability {
 			wp_delete_file( $tmp );
 			return self::error( 'md3_mcp_bad_type', __( 'Only JPEG, PNG, WebP and GIF images are accepted.', 'md3-wp-mcp' ), 415 );
 		}
-		if ( ! empty( $check['proper_filename'] ) ) {
-			$name = $check['proper_filename'];
+
+		// The sniffing above only reads the header, so "GIF89a<?php …" passes
+		// it. The image must also decode. Without an editor for the type
+		// (no GD or Imagick support), the header check stands alone.
+		$editor = wp_get_image_editor( $tmp, [ 'mime_type' => $check['type'] ] );
+		if ( is_wp_error( $editor ) && 'image_no_editor' !== $editor->get_error_code() ) {
+			wp_delete_file( $tmp );
+			return self::error( 'md3_mcp_bad_type', __( 'Only JPEG, PNG, WebP and GIF images are accepted.', 'md3-wp-mcp' ), 415 );
 		}
 
+		return ! empty( $check['proper_filename'] ) ? $check['proper_filename'] : $name;
+	}
+
+	/**
+	 * Adds a checked temp file (see prepare()) to the media library as the
+	 * current user.
+	 *
+	 * @param string              $tmp     Temp file path.
+	 * @param string              $name    File name from prepare().
+	 * @param array<string,mixed> $details Optional `alt`, `title` and `caption`.
+	 * @param int                 $parent  Post to attach to, or 0.
+	 * @return array<string,mixed>|\WP_Error Content_Formatter::media().
+	 */
+	public static function insert( string $tmp, string $name, array $details, int $parent ): array|\WP_Error {
+		self::load_admin_includes();
+
 		$post_data = [];
-		if ( isset( $input['title'] ) ) {
-			$post_data['post_title'] = Content_Sanitizer::plain( (string) $input['title'] );
+		if ( isset( $details['title'] ) ) {
+			$post_data['post_title'] = Content_Sanitizer::plain( (string) $details['title'] );
 		}
-		if ( isset( $input['caption'] ) ) {
-			$post_data['post_excerpt'] = Content_Sanitizer::plain( (string) $input['caption'] );
+		if ( isset( $details['caption'] ) ) {
+			$post_data['post_excerpt'] = Content_Sanitizer::plain( (string) $details['caption'] );
 		}
 
 		$restrict = static fn(): array => self::MIMES;
@@ -153,20 +206,18 @@ final class Upload_Media extends Ability {
 			return $id;
 		}
 
-		$alt = isset( $input['alt'] ) ? Content_Sanitizer::plain( (string) $input['alt'] ) : '';
+		$alt = isset( $details['alt'] ) ? Content_Sanitizer::plain( (string) $details['alt'] ) : '';
 		if ( '' !== $alt ) {
 			update_post_meta( $id, '_wp_attachment_image_alt', wp_slash( $alt ) );
 		}
 
-		$meta = wp_get_attachment_metadata( $id );
-		return [
-			'id'     => (int) $id,
-			'url'    => (string) wp_get_attachment_url( $id ),
-			'mime'   => (string) get_post_mime_type( $id ),
-			'width'  => (int) ( $meta['width'] ?? 0 ),
-			'height' => (int) ( $meta['height'] ?? 0 ),
-			'alt'    => $alt,
-		];
+		return Content_Formatter::media( (int) $id );
+	}
+
+	private static function load_admin_includes(): void {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+		require_once ABSPATH . 'wp-admin/includes/image.php';
 	}
 
 	/**
