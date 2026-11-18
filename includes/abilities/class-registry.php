@@ -28,6 +28,7 @@ final class Registry {
 			new Create_Upload_Link(),
 			new Get_Upload(),
 			new List_Media(),
+			new Update_Media(),
 			new Set_Featured_Image(),
 		];
 
