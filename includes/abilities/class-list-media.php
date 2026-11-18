@@ -19,16 +19,17 @@ final class List_Media extends Ability {
 	}
 
 	public function description(): string {
-		return __( 'Lists images in the media library, newest first, searching the title, caption, description and file name. Use it to reuse an existing image (for example with set-featured-image) instead of uploading it again.', 'md3-wp-mcp' );
+		return __( 'Lists images in the media library, newest first, searching the title, caption, description and file name. Use it to reuse an existing image (for example with set-featured-image) instead of uploading it again. Use missing_alt to find images that still need alt text.', 'md3-wp-mcp' );
 	}
 
 	public function input_schema(): array {
 		return [
 			'type'                 => 'object',
 			'properties'           => [
-				'search'   => [ 'type' => 'string' ],
-				'page'     => [ 'type' => 'integer', 'minimum' => 1, 'default' => 1 ],
-				'per_page' => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => self::MAX_PER_PAGE, 'default' => 20 ],
+				'search'      => [ 'type' => 'string' ],
+				'missing_alt' => [ 'type' => 'boolean', 'default' => false, 'description' => 'Only images without alt text.' ],
+				'page'        => [ 'type' => 'integer', 'minimum' => 1, 'default' => 1 ],
+				'per_page'    => [ 'type' => 'integer', 'minimum' => 1, 'maximum' => self::MAX_PER_PAGE, 'default' => 20 ],
 			],
 			'additionalProperties' => false,
 		];
@@ -69,6 +70,20 @@ final class List_Media extends Ability {
 		$search = isset( $input['search'] ) ? trim( (string) $input['search'] ) : '';
 		if ( '' !== $search ) {
 			$args['s'] = $search;
+		}
+
+		if ( ! empty( $input['missing_alt'] ) ) {
+			$args['meta_query'] = [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+				'relation' => 'OR',
+				[
+					'key'     => '_wp_attachment_image_alt',
+					'compare' => 'NOT EXISTS',
+				],
+				[
+					'key'   => '_wp_attachment_image_alt',
+					'value' => '',
+				],
+			];
 		}
 
 		// Search the file name too, as the media library does. WP_Query

@@ -612,6 +612,23 @@ class Test_Upload_Links extends Test_Case {
 		$this->assertSame( 'A description', $media['description'] );
 	}
 
+	public function test_list_media_finds_images_without_alt_text() {
+		$this->connect();
+		$with    = self::factory()->attachment->create( [ 'post_mime_type' => 'image/png', 'file' => '2026/11/a.png' ] );
+		$none    = self::factory()->attachment->create( [ 'post_mime_type' => 'image/png', 'file' => '2026/11/b.png' ] );
+		$cleared = self::factory()->attachment->create( [ 'post_mime_type' => 'image/png', 'file' => '2026/11/c.png' ] );
+		update_post_meta( $with, '_wp_attachment_image_alt', 'A' );
+		update_post_meta( $cleared, '_wp_attachment_image_alt', '' );
+
+		$missing = array_column( $this->run_ability( 'list-media', [ 'missing_alt' => true ] )['media'], 'id' );
+		sort( $missing );
+		$this->assertSame( [ $none, $cleared ], $missing );
+
+		$this->run_ability( 'update-media', [ 'id' => $none, 'alt' => 'B' ] );
+		$this->assertSame( [ $cleared ], array_column( $this->run_ability( 'list-media', [ 'missing_alt' => true ] )['media'], 'id' ) );
+		$this->assertCount( 3, $this->run_ability( 'list-media', [ 'missing_alt' => false ] )['media'] );
+	}
+
 	public function test_list_media_needs_read_scope_and_upload_rights() {
 		$this->connect( [ 'content:read' ] );
 		$this->assertTrue( ( new List_Media() )->check_permission( [] ) );
