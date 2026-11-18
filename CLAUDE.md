@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-<!-- synced-with: e72193f -->
+<!-- synced-with: 4f3b592 -->
 <!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
 
 MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
