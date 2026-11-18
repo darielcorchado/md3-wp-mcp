@@ -11,16 +11,31 @@ defined( 'ABSPATH' ) || exit;
 final class Audit_Log {
 
 	public static function record( string $tool, string $result, string $object_type = '', ?int $object_id = null, string $message = '' ): void {
-		global $wpdb;
-
 		$identity = Request_Context::get();
+		self::record_for(
+			$identity ? $identity->user_id : get_current_user_id(),
+			$identity ? $identity->client_id : '',
+			$tool,
+			$result,
+			$object_type,
+			$object_id,
+			$message
+		);
+	}
+
+	/**
+	 * Records an event of a given connection, outside an MCP request (the
+	 * upload page, the daily cleanup).
+	 */
+	public static function record_for( int $user_id, string $client_id, string $tool, string $result, string $object_type = '', ?int $object_id = null, string $message = '' ): void {
+		global $wpdb;
 
 		$wpdb->insert(
 			Schema::table( 'log' ),
 			[
 				'created_at'  => gmdate( 'Y-m-d H:i:s' ),
-				'user_id'     => $identity ? $identity->user_id : get_current_user_id(),
-				'client_id'   => $identity ? $identity->client_id : '',
+				'user_id'     => $user_id,
+				'client_id'   => substr( $client_id, 0, 191 ),
 				'tool'        => substr( $tool, 0, 64 ),
 				'object_type' => substr( $object_type, 0, 32 ),
 				'object_id'   => $object_id,

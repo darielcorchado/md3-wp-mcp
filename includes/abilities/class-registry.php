@@ -25,6 +25,10 @@ final class Registry {
 			new Trash_Content(),
 			new Restore_Content(),
 			new Upload_Media(),
+			new Create_Upload_Link(),
+			new Get_Upload(),
+			new List_Media(),
+			new Update_Media(),
 			new Set_Featured_Image(),
 		];
 

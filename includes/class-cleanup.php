@@ -2,11 +2,12 @@
 namespace MD3\WPMCP;
 
 use MD3\WPMCP\OAuth\Tokens;
+use MD3\WPMCP\Uploads\Upload_Links;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Daily cleanup of expired OAuth rows and old audit log rows.
+ * Daily cleanup of expired OAuth rows, upload links and old audit log rows.
  */
 final class Cleanup {
 
@@ -18,6 +19,7 @@ final class Cleanup {
 
 	public static function run(): void {
 		Tokens::prune();
+		Upload_Links::prune();
 		Audit_Log::prune( self::LOG_RETENTION_DAYS );
 	}
 }

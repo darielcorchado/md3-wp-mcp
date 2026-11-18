@@ -2,7 +2,7 @@
 /**
  * Removes the plugin's data when it is deleted from the Plugins screen.
  *
- * Drops the five tables, deletes the `md3_wp_mcp_*` options and the
+ * Drops the six tables, deletes the `md3_wp_mcp_*` options and the
  * `md3_mcp_*` transients, and clears the cleanup cron. User roles are never
  * touched: the plugin does not add any.
  */
@@ -13,7 +13,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 global $wpdb;
 
-foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens', 'log' ] as $md3_mcp_table ) {
+foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens', 'log', 'uploads' ] as $md3_mcp_table ) {
 	$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'md3_mcp_' . $md3_mcp_table . '`' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.NotPrepared
 }
 

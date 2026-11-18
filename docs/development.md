@@ -33,6 +33,8 @@ The tests are PHPUnit integration tests against a real WordPress and a real MySQ
 | `test-write-abilities.php` | `create-content`, `update-content`, `create-term` |
 | `test-lifecycle-abilities.php` | publish, schedule, unpublish, trash, restore |
 | `test-media-translation-abilities.php` | `upload-media`, `set-featured-image`, `link-translations` |
+| `test-upload-links.php` | `create-upload-link`, the upload page, `get-upload`, `list-media` |
+| `test-update-media.php` | `update-media` |
 | `test-oauth-core.php`, `test-oauth-endpoints.php` | Keys, tokens, discovery, registration, authorize, token, revoke |
 | `test-bearer-guard.php` | Which routes accept the token |
 | `test-mcp-server.php` | The MCP server and its transport permission |

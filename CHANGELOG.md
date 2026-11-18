@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 - 2026-11-18
+
+- New tool `create-upload-link`: a one-time page where the user uploads an image from the browser, so the AI can use images attached in the chat. The link works once, expires after 10 minutes, belongs to the connection that made it, and is stored only as a hash.
+- New tool `get-upload`: whether the link was used, and the uploaded image's ID and URL.
+- New tool `list-media`: finds images in the media library by title, caption or file name, or those still without alt text (`missing_alt`).
+- New tool `update-media`: changes the alt text, title, caption or description of an image in the media library. Changing the featured image of, or an image attached to, live content needs `content:publish`.
+- `upload-media` now also refuses files whose image header doesn't decode as an image, and returns the image's title, file name, caption, description and date.
+- New `uploads` table (database version 2), removed on uninstall.
+
 ## 0.1.0 - 2026-11-14
 
 First release.

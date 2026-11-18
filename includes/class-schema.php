@@ -8,7 +8,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Schema {
 
-	const DB_VERSION = '1';
+	const DB_VERSION = '2';
 
 	/**
 	 * Full table name for a short name (clients, auth_codes, ...).
@@ -32,6 +32,7 @@ final class Schema {
 		$access  = self::table( 'access_tokens' );
 		$refresh = self::table( 'refresh_tokens' );
 		$log     = self::table( 'log' );
+		$uploads = self::table( 'uploads' );
 
 		$sql = [];
 
@@ -96,6 +97,25 @@ final class Schema {
   ip_hash CHAR(64) NOT NULL DEFAULT '',
   PRIMARY KEY  (id),
   KEY created_at (created_at)
+) {$charset};";
+
+		// One-time upload links (create-upload-link). Only the token's hash is kept.
+		$sql[] = "CREATE TABLE {$uploads} (
+  id VARCHAR(32) NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  client_id VARCHAR(191) NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  can_publish TINYINT(1) NOT NULL DEFAULT 0,
+  attach_to BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  details TEXT NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'waiting',
+  attachment_id BIGINT UNSIGNED NULL DEFAULT NULL,
+  created_at DATETIME NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME NULL DEFAULT NULL,
+  PRIMARY KEY  (id),
+  UNIQUE KEY token_hash (token_hash),
+  KEY expires_at (expires_at)
 ) {$charset};";
 
 		foreach ( $sql as $statement ) {

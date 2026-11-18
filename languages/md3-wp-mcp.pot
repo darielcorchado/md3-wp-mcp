@@ -2,22 +2,23 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: MD3 WP MCP 0.1.0\n"
+"Project-Id-Version: MD3 WP MCP 0.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-16T01:28:44+00:00\n"
+"POT-Creation-Date: 2026-11-18T19:21:41+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: md3-wp-mcp\n"
 
 #. Plugin Name of the plugin
 #: md3-wp-mcp.php
-#: includes/abilities/class-registry.php:63
+#: includes/abilities/class-registry.php:67
 #: includes/oauth/class-authorize.php:445
+#: includes/uploads/class-upload-page.php:358
 msgid "MD3 WP MCP"
 msgstr ""
 
@@ -152,6 +153,27 @@ msgstr ""
 msgid "parent must be an existing term of a hierarchical taxonomy."
 msgstr ""
 
+#: includes/abilities/class-create-upload-link.php:23
+msgid "Create upload link"
+msgstr ""
+
+#: includes/abilities/class-create-upload-link.php:27
+msgid "Creates a one-time link where the user uploads an image (JPEG, PNG, WebP or GIF, up to 10 MB) from their browser to the media library. Use it when the user attached or wants to add an image you cannot send with upload-media. Show the link to the user; it works once and expires in 10 minutes. When they say it is done, call get-upload with upload_id to get the media ID."
+msgstr ""
+
+#: includes/abilities/class-create-upload-link.php:69
+msgid "Upload links can only be created over an MCP connection."
+msgstr ""
+
+#: includes/abilities/class-create-upload-link.php:72
+#: includes/abilities/class-upload-media.php:74
+msgid "You are not allowed to upload files."
+msgstr ""
+
+#: includes/abilities/class-create-upload-link.php:84
+msgid "Too many upload links. Try again in a few minutes."
+msgstr ""
+
 #: includes/abilities/class-get-content.php:13
 msgid "Get content"
 msgstr ""
@@ -162,6 +184,18 @@ msgstr ""
 
 #: includes/abilities/class-get-content.php:41
 msgid "You are not allowed to access this content."
+msgstr ""
+
+#: includes/abilities/class-get-upload.php:19
+msgid "Get upload"
+msgstr ""
+
+#: includes/abilities/class-get-upload.php:23
+msgid "Returns the status of an upload link from create-upload-link: waiting, uploaded or expired. Once uploaded, it returns the image (media ID, URL, size and alt text), ready for set-featured-image or the content."
+msgstr ""
+
+#: includes/abilities/class-get-upload.php:45
+msgid "Upload link not found. Links are kept for a day after they expire."
 msgstr ""
 
 #: includes/abilities/class-link-translations.php:19
@@ -175,7 +209,7 @@ msgstr ""
 #: includes/abilities/class-link-translations.php:65
 #: includes/abilities/class-set-featured-image.php:60
 #: includes/abilities/class-update-content.php:64
-#: includes/abilities/class-upload-media.php:93
+#: includes/abilities/class-upload-media.php:122
 msgid "You are not allowed to edit this content."
 msgstr ""
 
@@ -210,6 +244,18 @@ msgstr ""
 #: includes/abilities/class-list-content.php:93
 #: includes/abilities/class-list-content.php:98
 msgid "Pass a taxonomy of an enabled content type together with term_id."
+msgstr ""
+
+#: includes/abilities/class-list-media.php:18
+msgid "List media"
+msgstr ""
+
+#: includes/abilities/class-list-media.php:22
+msgid "Lists images in the media library, newest first, searching the title, caption, description and file name. Use it to reuse an existing image (for example with set-featured-image) instead of uploading it again. Use missing_alt to find images that still need alt text."
+msgstr ""
+
+#: includes/abilities/class-list-media.php:53
+msgid "You are not allowed to see the media library."
 msgstr ""
 
 #: includes/abilities/class-list-post-types.php:15
@@ -248,7 +294,7 @@ msgstr ""
 msgid "date must be ISO 8601 or \"Y-m-d H:i\"."
 msgstr ""
 
-#: includes/abilities/class-registry.php:64
+#: includes/abilities/class-registry.php:68
 msgid "Read and edit site content."
 msgstr ""
 
@@ -336,16 +382,32 @@ msgstr ""
 msgid "Restore this content before editing it."
 msgstr ""
 
+#: includes/abilities/class-update-media.php:28
+msgid "Update media"
+msgstr ""
+
+#: includes/abilities/class-update-media.php:32
+msgid "Changes the alt text, title, caption or description of an image in the media library. Only the fields sent change; an empty string clears one. Images already placed in post content keep their own alt text and caption: change those with update-content. Changing the featured image of, or an image attached to, published, scheduled or private content needs the publish scope."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:103
+msgid "Image not found in the media library."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:106
+msgid "You are not allowed to edit this image."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:116
+msgid "Send at least one of alt, title, caption or description."
+msgstr ""
+
 #: includes/abilities/class-upload-media.php:25
 msgid "Upload media"
 msgstr ""
 
 #: includes/abilities/class-upload-media.php:29
 msgid "Adds an image (JPEG, PNG, WebP or GIF, up to 10 MB) to the media library, from a public URL or base64 data. Give exactly one of url or base64; base64 also needs filename."
-msgstr ""
-
-#: includes/abilities/class-upload-media.php:74
-msgid "You are not allowed to upload files."
 msgstr ""
 
 #: includes/abilities/class-upload-media.php:80
@@ -356,29 +418,30 @@ msgstr ""
 msgid "filename is required with base64."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:112
-#: includes/abilities/class-upload-media.php:206
-#: includes/abilities/class-upload-media.php:213
+#: includes/abilities/class-upload-media.php:143
+#: includes/abilities/class-upload-media.php:257
+#: includes/abilities/class-upload-media.php:264
 msgid "The file is larger than 10 MB."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:132
+#: includes/abilities/class-upload-media.php:163
+#: includes/abilities/class-upload-media.php:172
 msgid "Only JPEG, PNG, WebP and GIF images are accepted."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:180
+#: includes/abilities/class-upload-media.php:231
 msgid "url must start with http:// or https://."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:210
+#: includes/abilities/class-upload-media.php:261
 msgid "base64 is not valid base64 data."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:218
+#: includes/abilities/class-upload-media.php:269
 msgid "Could not create a temporary file."
 msgstr ""
 
-#: includes/abilities/class-upload-media.php:222
+#: includes/abilities/class-upload-media.php:273
 msgid "Could not write the temporary file."
 msgstr ""
 
@@ -800,6 +863,39 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
+#: includes/admin/views/upload.php:16
+#: includes/admin/views/upload.php:39
+msgid "Upload an image"
+msgstr ""
+
+#: includes/admin/views/upload.php:36
+msgid "Image uploaded"
+msgstr ""
+
+#: includes/admin/views/upload.php:37
+msgid "You can close this tab and go back to the conversation. Tell the AI the image is uploaded."
+msgstr ""
+
+#. translators: 1: site name, 2: maximum file size, such as "10 MB".
+#: includes/admin/views/upload.php:44
+#, php-format
+msgid "The image is added to the media library of %1$s for your AI conversation. JPEG, PNG, WebP or GIF, up to %2$s."
+msgstr ""
+
+#: includes/admin/views/upload.php:56
+msgid "Drop an image here, or choose a file."
+msgstr ""
+
+#: includes/admin/views/upload.php:60
+msgid "Upload"
+msgstr ""
+
+#. translators: %s: time the link expires.
+#: includes/admin/views/upload.php:67
+#, php-format
+msgid "This link works once and expires at %s."
+msgstr ""
+
 #: includes/auth/class-scopes.php:28
 msgid "Read posts and pages"
 msgstr ""
@@ -834,10 +930,12 @@ msgid "Connecting an AI client requires HTTPS."
 msgstr ""
 
 #: includes/oauth/class-authorize.php:98
+#: includes/uploads/class-upload-page.php:109
 msgid "Too many requests. Wait a minute and try again."
 msgstr ""
 
 #: includes/oauth/class-authorize.php:106
+#: includes/uploads/class-upload-page.php:114
 msgid "Method not allowed."
 msgstr ""
 
@@ -947,6 +1045,64 @@ msgstr ""
 
 #: includes/oauth/class-token-endpoint.php:66
 msgid "The token and client_id parameters are required."
+msgstr ""
+
+#: includes/uploads/class-upload-links.php:72
+msgid "The upload link could not be created. Try again."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:106
+msgid "Uploading requires HTTPS."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:119
+msgid "This upload link is not valid. Ask the AI for a new one."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:149
+msgid "This page has expired. Open the upload link again."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:189
+msgid "This upload link has already been used. Ask the AI for a new one if you need to add another image."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:193
+msgid "This upload link has expired. Ask the AI for a new one."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:198
+msgid "This upload link no longer works because the AI connection that made it was closed."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:213
+msgid "The MCP user is not allowed to upload files."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:218
+msgid "Choose an image to upload."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:221
+msgid "The file could not be received. Try again."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:234
+msgid "The content this image goes with is now published, and this link was not made with permission to change published content."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:246
+msgid "This upload link has already been used or has expired. Ask the AI for a new one."
+msgstr ""
+
+#: includes/uploads/class-upload-page.php:264
+msgid "The image could not be saved. Try again."
+msgstr ""
+
+#. translators: %s: maximum file size, such as "10 MB".
+#: includes/uploads/class-upload-page.php:284
+#, php-format
+msgid "The file is larger than %s."
 msgstr ""
 
 #: md3-wp-mcp.php:51

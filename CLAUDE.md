@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-<!-- synced-with: 8cc8c12 -->
+<!-- synced-with: 4f3b592 -->
 <!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
 
 MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
@@ -27,18 +27,20 @@ If the first `bin/test.sh` after starting Docker fails with `db_connect_fail`, r
 md3-wp-mcp.php          Header, constants, requirement checks, boots Plugin on plugins_loaded
 uninstall.php           Drops the tables, options and transients
 includes/
-  class-plugin.php      boot(): schema upgrade, abilities, MCP server, OAuth, cleanup cron, admin
-  class-schema.php      Tables {prefix}md3_mcp_{clients,auth_codes,access_tokens,refresh_tokens,log}; DB_VERSION
+  class-plugin.php      boot(): schema upgrade, abilities, MCP server, OAuth, upload page, cleanup cron, admin
+  class-schema.php      Tables {prefix}md3_mcp_{clients,auth_codes,access_tokens,refresh_tokens,log,uploads}; DB_VERSION
   class-settings.php    Options md3_wp_mcp_{post_types,default_author,security} with defaults
   class-content-sanitizer.php  kses + block checks for every write
   class-rate-limiter.php, class-audit-log.php, class-cleanup.php
   abilities/            One class per MCP tool, extends Ability; Registry lists them.
-                        Content_Writer (shared create/update, Brevo opt-out) and Content_Formatter (output)
+                        Content_Writer (shared create/update, Brevo opt-out) and Content_Formatter (output);
+                        Upload_Media::prepare()/insert() hold the file rules for every upload
   auth/                 Identity, Request_Context (per-request token identity), Scopes
   mcp/                  Server (creates the adapter server, transport permission), Error_Handler
   oauth/                league/oauth2-server wiring: Discovery, Registration (DCR), Cimd, Authorize
                         (consent), Token_Endpoint, Bearer_Guard, Keys, Tokens; entities/, repositories/
   admin/                Settings_Page (tabs in views/), Diagnostics, Profile_Connections
+  uploads/              Upload_Links (one-time links, hashed tokens), Upload_Page (/md3-mcp/upload/<token>)
 languages/              .pot, es_ES .po/.mo
 tests/integration/      PHPUnit tests, one file per area; helpers in tests/helpers/class-test-case.php
 docs/                   design.md, implementation-plan.md, development.md
@@ -59,6 +61,7 @@ docs/                   design.md, implementation-plan.md, development.md
 - The MCP user is an Editor and never an administrator (`manage_options` is refused, checked at read time).
 - Every write goes through `Content_Sanitizer` (`wp_kses_post` even with `unfiltered_html`).
 - Tools have no `author` input; the author comes from the "Author for new content" setting.
+- Upload links work once, for 10 minutes, only while their connection is live, and the upload always runs as the MCP user, whoever is signed in in the browser.
 - Trash only, never a permanent delete. `trash-content` refuses when the site's trash is disabled.
 - Changing live content (published, scheduled, private) also needs `content:publish`.
 - Content created or published over MCP never sends the Brevo web push.
@@ -73,6 +76,31 @@ docs/                   design.md, implementation-plan.md, development.md
 - Schema change: edit `Schema`, increase `Schema::DB_VERSION`. New table or option: add it to `uninstall.php`.
 - Changed strings: regenerate the `.pot`, translate `es_ES.po`, compile the `.mo` (commands in docs/development.md).
 - Release: increase the version in both the header and `MD3_WP_MCP_VERSION`, and add a CHANGELOG entry.
+
+## Building a feature
+
+Every new feature is built with the superpowers skills, in this order:
+
+1. `superpowers:brainstorming`: read the Jira ticket, settle the design and every "decision needed" with the user before writing code.
+2. `superpowers:writing-plans`: a step-by-step plan from that design.
+3. `superpowers:test-driven-development` while you build it (with `superpowers:executing-plans` or `superpowers:subagent-driven-development`): a failing test first, every time.
+4. `superpowers:verification-before-completion`: run `bin/test.sh` and read the output before saying anything works.
+5. `superpowers:requesting-code-review`, plus `/code-review` and `/security-review` on the branch. Fix what they confirm, with a test for each fix.
+6. `superpowers:finishing-a-development-branch`: run the `sync-claude-md` skill, then open the pull request to `master`.
+
+## Testing a change
+
+1. **Tests:** `bin/test.sh` must pass with no `[ERROR]` lines. Tests can't see the web server, the page cache or the AI clients, so also:
+2. **Local site:** `bin/sync-to-site.sh <path to the md3digitalsolutions repo>`, then open any wp-admin page at http://localhost:8080 (this runs the schema upgrade). `WP_ENVIRONMENT_TYPE` is `local` there, so plain HTTP is allowed. Connect Claude Code (`claude mcp add --transport http md3 http://localhost:8080/wp-json/md3-wp-mcp/mcp`, then `/mcp`) or the MCP Inspector and call the tools you changed. Check wp-admin and the **Log** tab.
+3. **Staging (GridPane):** sync into the site repo, commit and deploy. Run Diagnostics, then the same calls from claude.ai.
+
+The upload link end to end: ask the AI to set an image attached in the chat as the featured image of a draft. Open the link, upload the image and say it's done. The AI calls `get-upload`, then `set-featured-image`. Then check:
+- opening the link again says it was already used;
+- an unused link expires after 10 minutes;
+- an SVG or a non-image is refused, and the same page then takes a real image;
+- the Log tab shows `create-upload-link` and `upload-link` entries.
+
+On a server, also check that `/md3-mcp/upload/*` is not page-cached and that a 10 MB multipart POST to it gets through the firewall and PHP's limits.
 
 ## Git
 

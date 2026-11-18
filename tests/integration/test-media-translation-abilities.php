@@ -71,6 +71,14 @@ class Test_Media_Translation_Abilities extends Test_Case {
 		$this->assertSame( 'md3_mcp_bad_type', $r->get_error_code() );
 	}
 
+	public function test_upload_rejects_an_image_header_that_does_not_decode() {
+		$this->writer();
+		$before = $this->attachment_count();
+		$r      = $this->run_ability( 'upload-media', [ 'base64' => base64_encode( "GIF89a<?php echo 1; ?>\n" ), 'filename' => 'a.gif' ] );
+		$this->assertSame( 'md3_mcp_bad_type', $r->get_error_code() );
+		$this->assertSame( $before, $this->attachment_count() );
+	}
+
 	public function test_upload_rejects_oversize() {
 		$this->writer();
 		$r = $this->run_ability( 'upload-media', [ 'base64' => base64_encode( str_repeat( 'a', 10485761 ) ), 'filename' => 'big.png' ] );

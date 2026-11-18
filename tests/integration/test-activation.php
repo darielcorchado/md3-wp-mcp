@@ -7,10 +7,10 @@ class Test_Activation extends Test_Case {
 
 	public function test_activation_creates_all_tables() {
 		global $wpdb;
-		foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens', 'log' ] as $t ) {
+		foreach ( [ 'clients', 'auth_codes', 'access_tokens', 'refresh_tokens', 'log', 'uploads' ] as $t ) {
 			$this->assertSame( Schema::table( $t ), $wpdb->get_var( "SHOW TABLES LIKE '" . Schema::table( $t ) . "'" ) );
 		}
-		$this->assertSame( '1', get_option( 'md3_wp_mcp_db_version' ) );
+		$this->assertSame( '2', get_option( 'md3_wp_mcp_db_version' ) );
 	}
 
 	public function test_activation_changes_no_roles() {
