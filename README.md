@@ -120,7 +120,7 @@ An AI client can't pass on an image the user attached in the chat: it has no pub
 - A link works once and expires after 10 minutes. It belongs to the connection that made it: `get-upload` only answers that connection, and the page stops working when that connection is revoked or the MCP user changes.
 - Only the SHA-256 hash of the link's token is stored. The page is never cached, framed or indexed, and sends no referrer.
 - The file rules are those of `upload-media`: JPEG, PNG, WebP or GIF, up to 10 MB (or PHP's upload limit, if lower), checked from the file's content, which must decode as an image.
-- The AI passes the alt text when it creates the link, or sets it later with `update-media`. Images already placed in a post keep their own copy of the alt text and caption; `update-content` changes those.
+- The AI passes the alt text when it creates the link, or sets it later with `update-media`. Changing an image that is the featured image of, or attached to, published, scheduled or private content needs `content:publish`. Other places that show an image's own alt text or caption (a classic `[gallery]`, the site logo, page-builder fields) are not checked, so a write-only connection can change what they show. Images already placed in a post keep their own copy of the alt text and caption; `update-content` changes those.
 - Each connection can create 10 links every 10 minutes. The page allows 30 requests per minute per IP. The log records each link created, used, refused and expired.
 
 ## Security model

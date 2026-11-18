@@ -85,6 +85,16 @@ class Test_Update_Media extends Test_Case {
 		$this->assertSame( 'Old', get_post( $pdf )->post_title );
 	}
 
+	public function test_a_non_image_never_asks_for_the_publish_scope() {
+		$parent = self::factory()->post->create( [ 'post_type' => 'page', 'post_status' => 'publish' ] );
+		$child  = self::factory()->post->create( [ 'post_type' => 'page', 'post_status' => 'draft', 'post_parent' => $parent ] );
+		$this->writer();
+
+		$this->assertTrue( $this->permission( $child ) );
+		$this->assertNull( \MD3\WPMCP\Auth\Request_Context::denied_scope() );
+		$this->assertSame( 'md3_mcp_not_found', $this->run_ability( 'update-media', [ 'id' => $child, 'alt' => 'x' ] )->get_error_code() );
+	}
+
 	public function test_needs_the_write_scope() {
 		$img = $this->image();
 		$this->as_mcp_user( [ 'content:read' ] );

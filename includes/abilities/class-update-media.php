@@ -29,7 +29,7 @@ final class Update_Media extends Ability {
 	}
 
 	public function description(): string {
-		return __( 'Changes the alt text, title, caption or description of an image in the media library. Only the fields sent change; an empty string clears one. Images already placed in post content keep their own alt text and caption: change those with update-content. Changing an image used by live content needs the publish scope.', 'md3-wp-mcp' );
+		return __( 'Changes the alt text, title, caption or description of an image in the media library. Only the fields sent change; an empty string clears one. Images already placed in post content keep their own alt text and caption: change those with update-content. Changing the featured image of, or an image attached to, published, scheduled or private content needs the publish scope.', 'md3-wp-mcp' );
 	}
 
 	public function scope(): string {
@@ -64,12 +64,14 @@ final class Update_Media extends Ability {
 	}
 
 	/**
-	 * An image shown on live content (its featured image, or attached to
-	 * it) changes what visitors see, so it needs the publish scope.
+	 * An image that is the featured image of, or attached to, live content
+	 * changes what visitors see, so it needs the publish scope. Anything
+	 * that isn't an image passes here, so it never asks for a scope it
+	 * can't use; execute() answers not found.
 	 */
 	protected function object_permission( array $input ): bool|\WP_Error {
 		$id = (int) ( $input['id'] ?? 0 );
-		return $id > 0 && self::used_by_live_content( $id ) ? $this->require_scope( Scopes::PUBLISH ) : true;
+		return Content_Writer::is_image_attachment( $id ) && self::used_by_live_content( $id ) ? $this->require_scope( Scopes::PUBLISH ) : true;
 	}
 
 	/**

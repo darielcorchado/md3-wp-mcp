@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MD3 WP MCP 0.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
-"POT-Creation-Date: 2026-11-18T19:16:40+00:00\n"
+"POT-Creation-Date: 2026-11-18T19:21:41+00:00\n"
 "PO-Revision-Date: 2026-11-18T12:00:00+00:00\n"
 "Last-Translator: Dariel Corchado\n"
 "Language-Team: Spanish (Spain)\n"
@@ -484,25 +484,26 @@ msgid ""
 "Changes the alt text, title, caption or description of an image in the media "
 "library. Only the fields sent change; an empty string clears one. Images "
 "already placed in post content keep their own alt text and caption: change "
-"those with update-content. Changing an image used by live content needs the "
-"publish scope."
+"those with update-content. Changing the featured image of, or an image "
+"attached to, published, scheduled or private content needs the publish scope."
 msgstr ""
 "Cambia el texto alternativo, el título, la leyenda o la descripción de una "
 "imagen de la biblioteca de medios. Solo cambian los campos enviados; una "
 "cadena vacía borra uno. Las imágenes ya colocadas en el contenido de una "
 "entrada conservan su propio texto alternativo y leyenda: cámbielos con "
-"update-content. Cambiar una imagen usada por contenido publicado requiere el "
-"permiso de publicación."
+"update-content. Cambiar la imagen destacada de un contenido publicado, "
+"programado o privado, o una imagen adjunta a él, requiere el permiso de "
+"publicación."
 
-#: includes/abilities/class-update-media.php:101
+#: includes/abilities/class-update-media.php:103
 msgid "Image not found in the media library."
 msgstr "No se encontró la imagen en la biblioteca de medios."
 
-#: includes/abilities/class-update-media.php:104
+#: includes/abilities/class-update-media.php:106
 msgid "You are not allowed to edit this image."
 msgstr "No tiene permiso para editar esta imagen."
 
-#: includes/abilities/class-update-media.php:114
+#: includes/abilities/class-update-media.php:116
 msgid "Send at least one of alt, title, caption or description."
 msgstr "Envíe al menos uno de alt, title, caption o description."
 

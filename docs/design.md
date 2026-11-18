@@ -325,7 +325,7 @@ The **permission check** for every ability requires:
 | `create-upload-link` | write | A one-time upload page for an image the user has in the chat (section 5.1). Accepts alt text, title, caption and `attach_to`; attaching to live content needs `content:publish`. |
 | `get-upload` | read | Status of a link from the same connection: `waiting`, `uploaded` or `expired`. Once uploaded, the image's ID, URL, size and alt text. |
 | `list-media` | read | Images in the media library, newest first, searched by title, caption, description and file name. `missing_alt` lists only images without alt text. `page` / `per_page` (≤ 50). Needs `upload_files`. |
-| `update-media` | write | Alt text, title, caption and description of one image; only the fields sent change, as plain text. Never the file. Needs `edit_post` on the image, and `content:publish` when it is the featured image of, or attached to, live content. Image blocks already in post content keep their own copy, changed with `update-content`. |
+| `update-media` | write | Alt text, title, caption and description of one image; only the fields sent change, as plain text. Never the file. Needs `edit_post` on the image, and `content:publish` when it is the featured image of, or attached to, live content. Image blocks already in post content keep their own copy, changed with `update-content`. Not checked as live: other places that show the image's own alt text or caption (classic `[gallery]`, the site logo, page-builder fields). |
 | `set-featured-image` | write | On an existing post with a media ID. |
 | `link-translations` | write | Only when Polylang is active: set a post's language and link it to its translation (`pll_set_post_language`, `pll_save_post_translations`). |
 
