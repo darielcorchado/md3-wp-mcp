@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MD3 WP MCP 0.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
-"POT-Creation-Date: 2026-11-18T18:45:38+00:00\n"
+"POT-Creation-Date: 2026-11-18T19:16:40+00:00\n"
 "PO-Revision-Date: 2026-11-18T12:00:00+00:00\n"
 "Last-Translator: Dariel Corchado\n"
 "Language-Team: Spanish (Spain)\n"
@@ -15,7 +15,7 @@ msgstr ""
 "X-Domain: md3-wp-mcp\n"
 
 #. Plugin Name of the plugin
-#: md3-wp-mcp.php includes/abilities/class-registry.php:66
+#: md3-wp-mcp.php includes/abilities/class-registry.php:67
 #: includes/oauth/class-authorize.php:445
 #: includes/uploads/class-upload-page.php:358
 msgid "MD3 WP MCP"
@@ -306,14 +306,16 @@ msgstr "Listar medios"
 msgid ""
 "Lists images in the media library, newest first, searching the title, "
 "caption, description and file name. Use it to reuse an existing image (for "
-"example with set-featured-image) instead of uploading it again."
+"example with set-featured-image) instead of uploading it again. Use "
+"missing_alt to find images that still need alt text."
 msgstr ""
 "Lista las imágenes de la biblioteca de medios, de la más reciente a la más "
 "antigua, buscando en el título, la leyenda, la descripción y el nombre del "
 "archivo. Úselo para reutilizar una imagen existente (por ejemplo, con set-"
-"featured-image) en lugar de subirla de nuevo."
+"featured-image) en lugar de subirla de nuevo. Use missing_alt para encontrar "
+"las imágenes que todavía no tienen texto alternativo."
 
-#: includes/abilities/class-list-media.php:52
+#: includes/abilities/class-list-media.php:53
 msgid "You are not allowed to see the media library."
 msgstr "No tiene permiso para ver la biblioteca de medios."
 
@@ -367,7 +369,7 @@ msgstr "Restaure este contenido antes de publicarlo."
 msgid "date must be ISO 8601 or \"Y-m-d H:i\"."
 msgstr "date debe estar en formato ISO 8601 o \"Y-m-d H:i\"."
 
-#: includes/abilities/class-registry.php:67
+#: includes/abilities/class-registry.php:68
 msgid "Read and edit site content."
 msgstr "Leer y editar el contenido del sitio."
 
@@ -472,6 +474,37 @@ msgstr ""
 #: includes/abilities/class-update-content.php:61
 msgid "Restore this content before editing it."
 msgstr "Restaure este contenido antes de editarlo."
+
+#: includes/abilities/class-update-media.php:28
+msgid "Update media"
+msgstr "Actualizar medios"
+
+#: includes/abilities/class-update-media.php:32
+msgid ""
+"Changes the alt text, title, caption or description of an image in the media "
+"library. Only the fields sent change; an empty string clears one. Images "
+"already placed in post content keep their own alt text and caption: change "
+"those with update-content. Changing an image used by live content needs the "
+"publish scope."
+msgstr ""
+"Cambia el texto alternativo, el título, la leyenda o la descripción de una "
+"imagen de la biblioteca de medios. Solo cambian los campos enviados; una "
+"cadena vacía borra uno. Las imágenes ya colocadas en el contenido de una "
+"entrada conservan su propio texto alternativo y leyenda: cámbielos con "
+"update-content. Cambiar una imagen usada por contenido publicado requiere el "
+"permiso de publicación."
+
+#: includes/abilities/class-update-media.php:101
+msgid "Image not found in the media library."
+msgstr "No se encontró la imagen en la biblioteca de medios."
+
+#: includes/abilities/class-update-media.php:104
+msgid "You are not allowed to edit this image."
+msgstr "No tiene permiso para editar esta imagen."
+
+#: includes/abilities/class-update-media.php:114
+msgid "Send at least one of alt, title, caption or description."
+msgstr "Envíe al menos uno de alt, title, caption o description."
 
 #: includes/abilities/class-upload-media.php:25
 msgid "Upload media"

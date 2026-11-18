@@ -105,11 +105,12 @@ Every tool is named `md3-wp-mcp/<tool>` and checks the scope, the allowed post t
 | `upload-media` | write | Adds a JPEG, PNG, WebP or GIF (up to 10 MB) from a URL or base64. |
 | `create-upload-link` | write | A one-time page where the user uploads an image from their browser, for images attached in the chat. |
 | `get-upload` | read | Whether the user has used an upload link yet, and the image once they have. |
-| `list-media` | read | Finds images in the media library by title, caption or file name. |
+| `list-media` | read | Finds images in the media library by title, caption or file name, or those without alt text. |
+| `update-media` | write | Changes the alt text, title, caption or description of an image in the media library. |
 | `set-featured-image` | write | Sets the featured image of an existing item. |
 | `link-translations` | write | Sets a post's language and links its translations. Only with Polylang active. |
 
-That is 17 tools, or 16 without Polylang. Content and excerpts always pass through `wp_kses_post`, so no scripts or event attributes get in. Post meta is limited to the Rank Math title, description and focus keyword. Content published over MCP never sends the Brevo web push.
+That is 18 tools, or 17 without Polylang. Content and excerpts always pass through `wp_kses_post`, so no scripts or event attributes get in. Post meta is limited to the Rank Math title, description and focus keyword. Content published over MCP never sends the Brevo web push.
 
 ### Images attached in the chat
 
@@ -119,6 +120,7 @@ An AI client can't pass on an image the user attached in the chat: it has no pub
 - A link works once and expires after 10 minutes. It belongs to the connection that made it: `get-upload` only answers that connection, and the page stops working when that connection is revoked or the MCP user changes.
 - Only the SHA-256 hash of the link's token is stored. The page is never cached, framed or indexed, and sends no referrer.
 - The file rules are those of `upload-media`: JPEG, PNG, WebP or GIF, up to 10 MB (or PHP's upload limit, if lower), checked from the file's content, which must decode as an image.
+- The AI passes the alt text when it creates the link, or sets it later with `update-media`. Images already placed in a post keep their own copy of the alt text and caption; `update-content` changes those.
 - Each connection can create 10 links every 10 minutes. The page allows 30 requests per minute per IP. The log records each link created, used, refused and expired.
 
 ## Security model

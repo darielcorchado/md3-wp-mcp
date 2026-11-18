@@ -9,14 +9,14 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-18T18:45:38+00:00\n"
+"POT-Creation-Date: 2026-11-18T19:16:40+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: md3-wp-mcp\n"
 
 #. Plugin Name of the plugin
 #: md3-wp-mcp.php
-#: includes/abilities/class-registry.php:66
+#: includes/abilities/class-registry.php:67
 #: includes/oauth/class-authorize.php:445
 #: includes/uploads/class-upload-page.php:358
 msgid "MD3 WP MCP"
@@ -251,10 +251,10 @@ msgid "List media"
 msgstr ""
 
 #: includes/abilities/class-list-media.php:22
-msgid "Lists images in the media library, newest first, searching the title, caption, description and file name. Use it to reuse an existing image (for example with set-featured-image) instead of uploading it again."
+msgid "Lists images in the media library, newest first, searching the title, caption, description and file name. Use it to reuse an existing image (for example with set-featured-image) instead of uploading it again. Use missing_alt to find images that still need alt text."
 msgstr ""
 
-#: includes/abilities/class-list-media.php:52
+#: includes/abilities/class-list-media.php:53
 msgid "You are not allowed to see the media library."
 msgstr ""
 
@@ -294,7 +294,7 @@ msgstr ""
 msgid "date must be ISO 8601 or \"Y-m-d H:i\"."
 msgstr ""
 
-#: includes/abilities/class-registry.php:67
+#: includes/abilities/class-registry.php:68
 msgid "Read and edit site content."
 msgstr ""
 
@@ -380,6 +380,26 @@ msgstr ""
 
 #: includes/abilities/class-update-content.php:61
 msgid "Restore this content before editing it."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:28
+msgid "Update media"
+msgstr ""
+
+#: includes/abilities/class-update-media.php:32
+msgid "Changes the alt text, title, caption or description of an image in the media library. Only the fields sent change; an empty string clears one. Images already placed in post content keep their own alt text and caption: change those with update-content. Changing an image used by live content needs the publish scope."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:101
+msgid "Image not found in the media library."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:104
+msgid "You are not allowed to edit this image."
+msgstr ""
+
+#: includes/abilities/class-update-media.php:114
+msgid "Send at least one of alt, title, caption or description."
 msgstr ""
 
 #: includes/abilities/class-upload-media.php:25
