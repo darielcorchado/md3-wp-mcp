@@ -233,9 +233,13 @@ class Test_Upload_Links extends Test_Case {
 		$this->as_browser( $admin );
 		$done = $this->browser_upload( $link['token'] );
 		$this->assertInstanceOf( WP_HTTP_Response::class, $done, is_wp_error( $done ) ? $done->get_error_message() : '' );
-		$this->assertSame( 200, $done->get_status() );
-		$this->assertStringContainsString( 'go back to', $done->get_data() );
+		$this->assertSame( 303, $done->get_status(), 'POST, redirect, GET: a reload never posts again' );
+		$this->assertSame( Upload_Page::url( $link['token'] ) . '?uploaded=1', $done->get_headers()['Location'] );
 		$this->assertSame( $admin, get_current_user_id(), 'the browser user is restored' );
+
+		$shown = Upload_Page::handle( 'GET', $link['token'], [], [], [ 'uploaded' => '1' ] );
+		$this->assertSame( 200, $shown->get_status() );
+		$this->assertStringContainsString( 'go back to', $shown->get_data() );
 
 		$this->back_to_mcp( $user_id );
 		$result = $this->run_ability( 'get-upload', [ 'upload_id' => $link['upload_id'] ] );
@@ -266,7 +270,7 @@ class Test_Upload_Links extends Test_Case {
 		$link = $this->create_link();
 		$this->as_browser();
 
-		$this->assertInstanceOf( WP_HTTP_Response::class, $this->browser_upload( $link['token'] ) );
+		$this->assertSame( 303, $this->browser_upload( $link['token'] )->get_status() );
 		$count = $this->attachment_count();
 
 		$again = Upload_Page::handle( 'GET', $link['token'], [], [] );
@@ -354,7 +358,33 @@ class Test_Upload_Links extends Test_Case {
 
 		// The same link still takes a good file.
 		$this->as_browser();
-		$this->assertSame( 200, $this->browser_upload( $link['token'] )->get_status() );
+		$this->assertSame( 303, $this->browser_upload( $link['token'] )->get_status() );
+	}
+
+	public function test_the_form_shown_after_a_refused_file_takes_the_next_try() {
+		$this->connect();
+		$link = $this->create_link();
+		$this->as_browser();
+
+		// The error page's own form, not a fresh GET: its nonce must be the browser's.
+		$refused = $this->browser_upload( $link['token'], $this->file( '<svg/>', 'dot.svg' ) );
+		$this->assertSame( 415, $refused->get_status() );
+		$this->assertSame( 0, get_current_user_id() );
+		preg_match( '/name="_wpnonce" value="([^"]+)"/', $refused->get_data(), $m );
+
+		$retry = Upload_Page::handle( 'POST', $link['token'], [ '_wpnonce' => $m[1] ], $this->file( base64_decode( self::PNG ) ) );
+		$this->assertInstanceOf( WP_HTTP_Response::class, $retry, is_wp_error( $retry ) ? $retry->get_error_message() : '' );
+		$this->assertSame( 303, $retry->get_status() );
+	}
+
+	public function test_the_uploaded_page_is_only_shown_for_a_used_link() {
+		$this->connect();
+		$link = $this->create_link();
+		$this->as_browser();
+
+		$page = Upload_Page::handle( 'GET', $link['token'], [], [], [ 'uploaded' => '1' ] );
+		$this->assertSame( 200, $page->get_status() );
+		$this->assertStringContainsString( 'type="file"', $page->get_data(), 'a waiting link still shows the form' );
 	}
 
 	public function test_a_file_over_the_size_limit_is_refused() {
@@ -366,11 +396,72 @@ class Test_Upload_Links extends Test_Case {
 		$result = $this->browser_upload( $link['token'], $this->file( str_repeat( 'a', 10485761 ), 'big.png' ) );
 		$this->assertSame( 413, $result->get_status() );
 
-		$partial              = $this->file( base64_decode( self::PNG ) );
+		$partial                  = $this->file( base64_decode( self::PNG ) );
 		$partial['file']['error'] = UPLOAD_ERR_INI_SIZE;
 		$this->assertSame( 413, $this->browser_upload( $link['token'], $partial )->get_status() );
 
+		// Over post_max_size PHP drops the whole body, nonce included.
+		$dropped = Upload_Page::handle( 'POST', $link['token'], [], [ 'file' => [ 'error' => UPLOAD_ERR_INI_SIZE ] ] );
+		$this->assertInstanceOf( WP_HTTP_Response::class, $dropped );
+		$this->assertSame( 413, $dropped->get_status() );
+
 		$this->assertSame( $before, $this->attachment_count() );
+	}
+
+	public function test_the_page_states_the_smaller_of_the_plugin_and_php_limits() {
+		$this->connect();
+		$link = $this->create_link();
+		$this->as_browser();
+
+		$limit = static fn(): int => 2 * MB_IN_BYTES;
+		add_filter( 'upload_size_limit', $limit );
+		$this->assertSame( 2 * MB_IN_BYTES, Upload_Page::max_bytes() );
+		$this->assertStringContainsString( 'up to 2 MB', Upload_Page::handle( 'GET', $link['token'], [], [] )->get_data() );
+		remove_filter( 'upload_size_limit', $limit );
+
+		$this->assertSame( min( 10485760, wp_max_upload_size() ), Upload_Page::max_bytes() );
+	}
+
+	public function test_the_link_records_the_image_as_soon_as_it_is_created() {
+		global $wpdb;
+		$this->connect();
+		$link = $this->create_link();
+		$this->as_browser();
+
+		// PHP dies while the image sizes are made, after the attachment exists.
+		$die = static function (): void {
+			throw new RuntimeException( 'fatal' );
+		};
+		add_action( 'add_attachment', $die, 20 );
+		try {
+			$this->browser_upload( $link['token'] );
+			$this->fail( 'no fatal' );
+		} catch ( RuntimeException $e ) {
+			$this->assertSame( 'fatal', $e->getMessage() );
+		} finally {
+			remove_action( 'add_attachment', $die, 20 );
+		}
+
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT status, attachment_id FROM ' . Schema::table( 'uploads' ) . ' WHERE id = %s', $link['upload_id'] ) );
+		$this->assertSame( 'uploaded', $row->status );
+		$this->assertGreaterThan( 0, (int) $row->attachment_id );
+		$this->assertSame( 0, get_current_user_id(), 'the browser user is restored' );
+	}
+
+	public function test_create_upload_link_reports_a_link_that_could_not_be_stored() {
+		global $wpdb;
+		$this->connect();
+		$table = Schema::table( 'uploads' );
+		$break = static fn( $query ) => str_starts_with( $query, "INSERT INTO `{$table}`" ) ? "INSERT INTO `{$table}_missing` VALUES (1)" : $query;
+		add_filter( 'query', $break );
+		$suppress = $wpdb->suppress_errors( true );
+
+		$result = $this->run_ability( 'create-upload-link', [] );
+
+		$wpdb->suppress_errors( $suppress );
+		remove_filter( 'query', $break );
+		$this->assertWPError( $result );
+		$this->assertSame( 'md3_mcp_upload_link_failed', $result->get_error_code() );
 	}
 
 	public function test_a_link_of_a_revoked_connection_is_refused() {
@@ -448,6 +539,14 @@ class Test_Upload_Links extends Test_Case {
 		$this->assertSame( [ 'expired:expired' ], $this->log_messages( 'upload-link' ) );
 		$this->assertSame( 'expired', $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$table} WHERE id = %s", $expired['upload_id'] ) ) );
 		$this->assertSame( 'waiting', $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$table} WHERE id = %s", $fresh['upload_id'] ) ) );
+
+		// An upload still running when the link expires is not called expired.
+		$wpdb->update( $table, [ 'status' => 'uploading', 'expires_at' => Tokens::utc( time() - 60 ) ], [ 'id' => $fresh['upload_id'] ] );
+		Cleanup::run();
+		$this->assertSame( 'uploading', $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$table} WHERE id = %s", $fresh['upload_id'] ) ) );
+		$wpdb->update( $table, [ 'expires_at' => Tokens::utc( time() - HOUR_IN_SECONDS - 60 ) ], [ 'id' => $fresh['upload_id'] ] );
+		Cleanup::run();
+		$this->assertSame( 'expired', $wpdb->get_var( $wpdb->prepare( "SELECT status FROM {$table} WHERE id = %s", $fresh['upload_id'] ) ) );
 
 		$wpdb->update( $table, [ 'expires_at' => Tokens::utc( time() - DAY_IN_SECONDS - 60 ) ], [ 'id' => $expired['upload_id'] ] );
 		Cleanup::run();

@@ -352,13 +352,14 @@ A chat attachment has no public URL, and the model doesn't get its bytes (a 500 
 The rules:
 
 - The token is 43 random letters and digits, shown once. Only its SHA-256 hash is stored, as with OAuth tokens. The `upload_id` that the AI uses with `get-upload` is a separate value and does not open the page.
-- **Single use.** The link is taken with one atomic `UPDATE … WHERE status = 'waiting' AND expires_at > now`, so two requests can't both upload. A refused file (wrong type, too large, no file, a bad nonce) does not use up the link.
+- **Single use.** The link is taken with one atomic `UPDATE … WHERE status = 'waiting' AND expires_at > now`, so two requests can't both upload. A refused file (wrong type, too large, no file, a bad nonce) does not use up the link, and the form shown with the error takes the next try. The link records the attachment on `add_attachment`, before the image sizes are made, so it still points to the image if PHP dies after that. A successful upload redirects (303) to `?uploaded=1`, so a reload never posts again.
+- **Size:** 10 MB, or PHP's upload limit (`wp_max_upload_size()`) when that is lower; the page states the smaller one. A POST over `post_max_size` arrives with no body and gets the size message, not a nonce error.
 - **Tied to the connection.** `get-upload` only finds links of the calling client and MCP user. The page refuses the link once the connection has no live token or the MCP user setting changed.
 - **The file rules of `upload-media`**, shared in `Upload_Media::prepare()`: up to 10 MB; JPEG, PNG, WebP or GIF, from the content (`wp_check_filetype_and_ext`), and the image must decode in the image editor, so a GIF header followed by PHP is refused. `upload_mimes` is limited to those four types during the upload.
 - `attach_to` live content needs `content:publish` when the link is made. If the content goes live afterwards, a link made without that scope can't attach to it.
 - **The page** is a standalone form with no theme and no scripts: `X-Frame-Options: DENY`, a CSP with `frame-ancestors 'none'` and `form-action 'self'`, `noindex`, `no-store` and `no-referrer`. The form has a WordPress nonce. The page is matched on the request path in `parse_request`, so no rewrite rule or flush is needed.
 - **Limits:** 10 links per connection every 10 minutes; 30 page requests per minute per IP.
-- **Audit log:** `create-upload-link` calls are logged like every tool. The page logs `upload-link` with `ok` / `used`, `denied` / `used`, `expired` or `connection`, and `error`. The daily cleanup logs each unused link that expired (`expired`), then deletes links a day after they expire.
+- **Audit log:** `create-upload-link` calls are logged like every tool. The page logs `upload-link` with `ok` / `used`, `denied` / `used`, `expired` or `connection`, and `error`. The daily cleanup logs each unused link that expired (`expired`), giving an upload in progress an hour, then deletes links a day after they expire.
 
 ## 6. Admin screens
 

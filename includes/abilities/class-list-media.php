@@ -71,10 +71,10 @@ final class List_Media extends Ability {
 			$args['s'] = $search;
 		}
 
-		// Search the file name too, as the media library does.
+		// Search the file name too, as the media library does. WP_Query
+		// removes this filter once it has read it, so it applies to this query only.
 		add_filter( 'wp_allow_query_attachment_by_filename', '__return_true' );
 		$query = new \WP_Query( $args );
-		remove_filter( 'wp_allow_query_attachment_by_filename', '__return_true' );
 
 		return [
 			'media' => array_map( static fn( \WP_Post $p ): array => Content_Formatter::media( (int) $p->ID ), $query->posts ),

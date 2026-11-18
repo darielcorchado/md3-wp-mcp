@@ -27,6 +27,9 @@ final class Upload_Links {
 	/** How long an expired or used link stays, so get-upload can still report it. */
 	const KEEP_AFTER_EXPIRY = DAY_IN_SECONDS;
 
+	/** An upload that started before expiry may still be running this long after it. */
+	const UPLOAD_GRACE = HOUR_IN_SECONDS;
+
 	const WAITING   = 'waiting';
 	const UPLOADING = 'uploading';
 	const UPLOADED  = 'uploaded';
@@ -38,9 +41,9 @@ final class Upload_Links {
 	 * Creates a link for a connection.
 	 *
 	 * @param array{alt?:string,title?:string,caption?:string} $details Applied to the image.
-	 * @return array{id:string,token:string,expires_at:int}
+	 * @return array{id:string,token:string,expires_at:int}|\WP_Error
 	 */
-	public static function create( Identity $identity, int $attach_to, array $details, bool $can_publish ): array {
+	public static function create( Identity $identity, int $attach_to, array $details, bool $can_publish ): array|\WP_Error {
 		global $wpdb;
 
 		// 43 characters from 62 is about 256 bits, from a CSPRNG.
@@ -49,7 +52,7 @@ final class Upload_Links {
 		$now     = time();
 		$expires = $now + self::TTL;
 
-		$wpdb->insert(
+		$stored = $wpdb->insert(
 			Schema::table( 'uploads' ),
 			[
 				'id'          => $id,
@@ -65,6 +68,9 @@ final class Upload_Links {
 			],
 			[ '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%s', '%s' ]
 		);
+		if ( 1 !== $stored ) {
+			return new \WP_Error( 'md3_mcp_upload_link_failed', __( 'The upload link could not be created. Try again.', 'md3-wp-mcp' ), [ 'status' => 500 ] );
+		}
 
 		return [
 			'id'         => $id,
@@ -165,6 +171,7 @@ final class Upload_Links {
 	/**
 	 * Marks unused links past their expiry as expired, recording each once
 	 * in the audit log, and deletes links that expired more than a day ago.
+	 * An upload in progress gets UPLOAD_GRACE before it counts as expired.
 	 *
 	 * @return int Links deleted.
 	 */
@@ -173,12 +180,19 @@ final class Upload_Links {
 		$table = Schema::table( 'uploads' );
 		$now   = Tokens::utc( time() );
 
+		$grace   = Tokens::utc( time() - self::UPLOAD_GRACE );
 		$expired = $wpdb->get_results(
-			$wpdb->prepare( "SELECT id, client_id, user_id FROM {$table} WHERE status IN (%s, %s) AND expires_at <= %s", self::WAITING, self::UPLOADING, $now )
+			$wpdb->prepare(
+				"SELECT id, client_id, user_id, status FROM {$table} WHERE ( status = %s AND expires_at <= %s ) OR ( status = %s AND expires_at <= %s )",
+				self::WAITING,
+				$now,
+				self::UPLOADING,
+				$grace
+			)
 		);
 		foreach ( $expired as $row ) {
 			$changed = $wpdb->query(
-				$wpdb->prepare( "UPDATE {$table} SET status = %s WHERE id = %s AND status IN (%s, %s)", self::EXPIRED, $row->id, self::WAITING, self::UPLOADING )
+				$wpdb->prepare( "UPDATE {$table} SET status = %s WHERE id = %s AND status = %s", self::EXPIRED, $row->id, $row->status )
 			);
 			if ( 1 === (int) $changed ) {
 				Audit_Log::record_for( (int) $row->user_id, (string) $row->client_id, 'upload-link', 'expired', '', null, 'expired' );

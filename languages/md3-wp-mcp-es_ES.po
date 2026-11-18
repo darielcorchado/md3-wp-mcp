@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MD3 WP MCP 0.2.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
-"POT-Creation-Date: 2026-11-18T17:39:00+00:00\n"
+"POT-Creation-Date: 2026-11-18T18:45:38+00:00\n"
 "PO-Revision-Date: 2026-11-18T12:00:00+00:00\n"
 "Last-Translator: Dariel Corchado\n"
 "Language-Team: Spanish (Spain)\n"
@@ -17,7 +17,7 @@ msgstr ""
 #. Plugin Name of the plugin
 #: md3-wp-mcp.php includes/abilities/class-registry.php:66
 #: includes/oauth/class-authorize.php:445
-#: includes/uploads/class-upload-page.php:286
+#: includes/uploads/class-upload-page.php:358
 msgid "MD3 WP MCP"
 msgstr "MD3 WP MCP"
 
@@ -167,11 +167,11 @@ msgstr "El nombre del término está vacío."
 msgid "parent must be an existing term of a hierarchical taxonomy."
 msgstr "parent debe ser un término existente de una taxonomía jerárquica."
 
-#: includes/abilities/class-create-upload-link.php:24
+#: includes/abilities/class-create-upload-link.php:23
 msgid "Create upload link"
 msgstr "Crear enlace de carga"
 
-#: includes/abilities/class-create-upload-link.php:28
+#: includes/abilities/class-create-upload-link.php:27
 msgid ""
 "Creates a one-time link where the user uploads an image (JPEG, PNG, WebP or "
 "GIF, up to 10 MB) from their browser to the media library. Use it when the "
@@ -186,16 +186,16 @@ msgstr ""
 "funciona una sola vez y caduca en 10 minutos. Cuando el usuario diga que "
 "terminó, llame a get-upload con upload_id para obtener el ID del medio."
 
-#: includes/abilities/class-create-upload-link.php:70
+#: includes/abilities/class-create-upload-link.php:69
 msgid "Upload links can only be created over an MCP connection."
 msgstr "Los enlaces de carga solo se pueden crear desde una conexión MCP."
 
-#: includes/abilities/class-create-upload-link.php:73
+#: includes/abilities/class-create-upload-link.php:72
 #: includes/abilities/class-upload-media.php:74
 msgid "You are not allowed to upload files."
 msgstr "Usted no tiene permiso para subir archivos."
 
-#: includes/abilities/class-create-upload-link.php:85
+#: includes/abilities/class-create-upload-link.php:84
 msgid "Too many upload links. Try again in a few minutes."
 msgstr "Demasiados enlaces de carga. Inténtelo de nuevo en unos minutos."
 
@@ -498,7 +498,6 @@ msgstr "filename es obligatorio con base64."
 #: includes/abilities/class-upload-media.php:143
 #: includes/abilities/class-upload-media.php:257
 #: includes/abilities/class-upload-media.php:264
-#: includes/uploads/class-upload-page.php:172
 msgid "The file is larger than 10 MB."
 msgstr "El archivo supera los 10 MB."
 
@@ -995,15 +994,15 @@ msgstr ""
 "Puede cerrar esta pestaña y volver a la conversación. Dígale a la IA que la "
 "imagen ya está subida."
 
-#. translators: 1: site name, 2: maximum file size in MB.
+#. translators: 1: site name, 2: maximum file size, such as "10 MB".
 #: includes/admin/views/upload.php:44
 #, php-format
 msgid ""
 "The image is added to the media library of %1$s for your AI conversation. "
-"JPEG, PNG, WebP or GIF, up to %2$d MB."
+"JPEG, PNG, WebP or GIF, up to %2$s."
 msgstr ""
 "La imagen se agrega a la biblioteca de medios de %1$s para su conversación "
-"con la IA. JPEG, PNG, WebP o GIF, de hasta %2$d MB."
+"con la IA. JPEG, PNG, WebP o GIF, de hasta %2$s."
 
 #: includes/admin/views/upload.php:56
 msgid "Drop an image here, or choose a file."
@@ -1052,12 +1051,12 @@ msgid "Connecting an AI client requires HTTPS."
 msgstr "Conectar un cliente de IA requiere HTTPS."
 
 #: includes/oauth/class-authorize.php:98
-#: includes/uploads/class-upload-page.php:93
+#: includes/uploads/class-upload-page.php:109
 msgid "Too many requests. Wait a minute and try again."
 msgstr "Demasiadas solicitudes. Espere un minuto e inténtelo de nuevo."
 
 #: includes/oauth/class-authorize.php:106
-#: includes/uploads/class-upload-page.php:98
+#: includes/uploads/class-upload-page.php:114
 msgid "Method not allowed."
 msgstr "Método no permitido."
 
@@ -1191,19 +1190,23 @@ msgstr "No se pudo emitir el token."
 msgid "The token and client_id parameters are required."
 msgstr "Los parámetros token y client_id son obligatorios."
 
-#: includes/uploads/class-upload-page.php:90
+#: includes/uploads/class-upload-links.php:72
+msgid "The upload link could not be created. Try again."
+msgstr "No se pudo crear el enlace de carga. Inténtelo de nuevo."
+
+#: includes/uploads/class-upload-page.php:106
 msgid "Uploading requires HTTPS."
 msgstr "Subir archivos requiere HTTPS."
 
-#: includes/uploads/class-upload-page.php:103
+#: includes/uploads/class-upload-page.php:119
 msgid "This upload link is not valid. Ask the AI for a new one."
 msgstr "Este enlace de carga no es válido. Pídale uno nuevo a la IA."
 
-#: includes/uploads/class-upload-page.php:119
+#: includes/uploads/class-upload-page.php:149
 msgid "This page has expired. Open the upload link again."
 msgstr "Esta página caducó. Abra de nuevo el enlace de carga."
 
-#: includes/uploads/class-upload-page.php:142
+#: includes/uploads/class-upload-page.php:189
 msgid ""
 "This upload link has already been used. Ask the AI for a new one if you need "
 "to add another image."
@@ -1211,11 +1214,11 @@ msgstr ""
 "Este enlace de carga ya se usó. Pídale uno nuevo a la IA si necesita agregar "
 "otra imagen."
 
-#: includes/uploads/class-upload-page.php:146
+#: includes/uploads/class-upload-page.php:193
 msgid "This upload link has expired. Ask the AI for a new one."
 msgstr "Este enlace de carga caducó. Pídale uno nuevo a la IA."
 
-#: includes/uploads/class-upload-page.php:151
+#: includes/uploads/class-upload-page.php:198
 msgid ""
 "This upload link no longer works because the AI connection that made it was "
 "closed."
@@ -1223,19 +1226,19 @@ msgstr ""
 "Este enlace de carga ya no funciona porque se cerró la conexión de IA que lo "
 "creó."
 
-#: includes/uploads/class-upload-page.php:164
+#: includes/uploads/class-upload-page.php:213
 msgid "The MCP user is not allowed to upload files."
 msgstr "El usuario MCP no tiene permiso para subir archivos."
 
-#: includes/uploads/class-upload-page.php:169
+#: includes/uploads/class-upload-page.php:218
 msgid "Choose an image to upload."
 msgstr "Elija una imagen para subir."
 
-#: includes/uploads/class-upload-page.php:175
+#: includes/uploads/class-upload-page.php:221
 msgid "The file could not be received. Try again."
 msgstr "No se pudo recibir el archivo. Inténtelo de nuevo."
 
-#: includes/uploads/class-upload-page.php:188
+#: includes/uploads/class-upload-page.php:234
 msgid ""
 "The content this image goes with is now published, and this link was not "
 "made with permission to change published content."
@@ -1243,15 +1246,21 @@ msgstr ""
 "El contenido al que pertenece esta imagen ya está publicado, y este enlace "
 "no se creó con permiso para cambiar contenido publicado."
 
-#: includes/uploads/class-upload-page.php:199
+#: includes/uploads/class-upload-page.php:246
 msgid ""
 "This upload link has already been used or has expired. Ask the AI for a new "
 "one."
 msgstr "Este enlace de carga ya se usó o caducó. Pídale uno nuevo a la IA."
 
-#: includes/uploads/class-upload-page.php:206
+#: includes/uploads/class-upload-page.php:264
 msgid "The image could not be saved. Try again."
 msgstr "No se pudo guardar la imagen. Inténtelo de nuevo."
+
+#. translators: %s: maximum file size, such as "10 MB".
+#: includes/uploads/class-upload-page.php:284
+#, php-format
+msgid "The file is larger than %s."
+msgstr "El archivo supera los %s."
 
 #: md3-wp-mcp.php:51
 msgid ""

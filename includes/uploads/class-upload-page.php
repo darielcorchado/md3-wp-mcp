@@ -20,8 +20,9 @@ defined( 'ABSPATH' ) || exit;
  * and a browser signed in as someone else (usually an administrator) does
  * not matter, because the upload always runs as the MCP user who made it.
  *
- * GET shows the form. POST checks the nonce, the file and the link, then
- * adds the image to the media library and uses up the link.
+ * GET shows the form. POST checks the nonce, the file and the link, adds
+ * the image to the media library, uses up the link and redirects to
+ * `?uploaded=1`, so reloading the page never posts again.
  */
 final class Upload_Page {
 
@@ -45,6 +46,14 @@ final class Upload_Page {
 	}
 
 	/**
+	 * The largest file the page takes: the plugin's limit, or PHP's upload
+	 * limit when that is lower.
+	 */
+	public static function max_bytes(): int {
+		return (int) min( Upload_Media::MAX_BYTES, wp_max_upload_size() );
+	}
+
+	/**
 	 * The token in a request path (relative to the home URL), or null when
 	 * the path is not the upload page.
 	 */
@@ -64,6 +73,7 @@ final class Upload_Page {
 		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : 'get';
 		// phpcs:disable WordPress.Security.NonceVerification -- handle() verifies the nonce.
 		$post  = wp_unslash( $_POST );
+		$query = wp_unslash( $_GET );
 		$files = [];
 		if ( isset( $_FILES['file'] ) && is_array( $_FILES['file'] ) ) {
 			$file = $_FILES['file']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- checked in handle() and Upload_Media::prepare().
@@ -72,9 +82,14 @@ final class Upload_Page {
 				$files['file'] = $file;
 			}
 		}
+		// Over post_max_size PHP drops the whole body, the nonce included.
+		$length = isset( $_SERVER['CONTENT_LENGTH'] ) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+		if ( 'post' === $method && ! $post && ! $files && $length > 0 ) {
+			$files['file'] = [ 'error' => UPLOAD_ERR_INI_SIZE ];
+		}
 		// phpcs:enable
 
-		self::send( self::handle( $method, $token, (array) $post, $files ) );
+		self::send( self::handle( $method, $token, (array) $post, $files, (array) $query ) );
 	}
 
 	/**
@@ -82,10 +97,11 @@ final class Upload_Page {
 	 *
 	 * @param array<string,mixed> $post  POST parameters.
 	 * @param array<string,mixed> $files Uploaded files, as in $_FILES.
-	 * @return \WP_HTTP_Response|\WP_Error The page, or an error whose message
-	 *         is safe HTML and whose data has the HTTP status.
+	 * @param array<string,mixed> $query GET parameters.
+	 * @return \WP_HTTP_Response|\WP_Error The page or a redirect, or an error
+	 *         whose message is safe HTML and whose data has the HTTP status.
 	 */
-	public static function handle( string $method, string $token, array $post, array $files ) {
+	public static function handle( string $method, string $token, array $post, array $files, array $query = [] ) {
 		if ( ! OAuth::transport_allowed() ) {
 			return self::error( 403, esc_html__( 'Uploading requires HTTPS.', 'md3-wp-mcp' ) );
 		}
@@ -103,6 +119,11 @@ final class Upload_Page {
 			return self::error( 404, esc_html__( 'This upload link is not valid. Ask the AI for a new one.', 'md3-wp-mcp' ) );
 		}
 
+		// Where the browser lands after a successful upload.
+		if ( 'GET' === $method && ! empty( $query['uploaded'] ) && Upload_Links::UPLOADED === $row->status ) {
+			return self::render( [ 'done' => true ], 200 );
+		}
+
 		$refusal = self::refusal( $row );
 		if ( $refusal ) {
 			return $refusal;
@@ -110,6 +131,15 @@ final class Upload_Page {
 
 		if ( 'GET' === $method ) {
 			return self::page( $row, 200 );
+		}
+
+		// A file over the size limit never reached PHP; when it was over
+		// post_max_size, the nonce didn't either. Showing the form again
+		// changes nothing, so it needs no nonce.
+		$file  = $files['file'] ?? null;
+		$error = is_array( $file ) ? (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) : UPLOAD_ERR_NO_FILE;
+		if ( UPLOAD_ERR_INI_SIZE === $error || UPLOAD_ERR_FORM_SIZE === $error ) {
+			return self::page( $row, 413, self::too_large() );
 		}
 
 		// The nonce belongs to the browser's own session: check it before
@@ -122,10 +152,27 @@ final class Upload_Page {
 		$previous = get_current_user_id();
 		wp_set_current_user( (int) $row->user_id );
 		try {
-			return self::upload( $row, $files['file'] ?? null );
+			$outcome = self::upload( $row, $file );
 		} finally {
 			wp_set_current_user( $previous );
 		}
+
+		// Rendered back as the browser's user, so the form's nonce is theirs.
+		if ( is_array( $outcome ) ) {
+			return self::page( $row, $outcome['status'], $outcome['message'] );
+		}
+		if ( is_wp_error( $outcome ) ) {
+			return $outcome;
+		}
+		return new \WP_HTTP_Response(
+			null,
+			303,
+			[
+				'Location'        => self::url( $token ) . '?uploaded=1',
+				'Cache-Control'   => 'no-store',
+				'Referrer-Policy' => 'no-referrer',
+			]
+		);
 	}
 
 	/**
@@ -157,59 +204,84 @@ final class Upload_Page {
 	 * POST, as the MCP user: checks the file, then uses up the link.
 	 *
 	 * @param mixed $file The `file` entry of $_FILES.
-	 * @return \WP_HTTP_Response|\WP_Error
+	 * @return true|array{status:int,message:string}|\WP_Error True when the
+	 *         image was added; the status and message to show with the form
+	 *         again; or an error page when the link can't be used any more.
 	 */
 	private static function upload( object $row, $file ) {
 		if ( ! current_user_can( 'upload_files' ) ) {
-			return self::page( $row, 403, __( 'The MCP user is not allowed to upload files.', 'md3-wp-mcp' ) );
+			return self::retry( 403, __( 'The MCP user is not allowed to upload files.', 'md3-wp-mcp' ) );
 		}
 
 		$error = is_array( $file ) ? (int) ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) : UPLOAD_ERR_NO_FILE;
 		if ( UPLOAD_ERR_NO_FILE === $error ) {
-			return self::page( $row, 400, __( 'Choose an image to upload.', 'md3-wp-mcp' ) );
-		}
-		if ( UPLOAD_ERR_INI_SIZE === $error || UPLOAD_ERR_FORM_SIZE === $error ) {
-			return self::page( $row, 413, __( 'The file is larger than 10 MB.', 'md3-wp-mcp' ) );
+			return self::retry( 400, __( 'Choose an image to upload.', 'md3-wp-mcp' ) );
 		}
 		if ( UPLOAD_ERR_OK !== $error || empty( $file['tmp_name'] ) ) {
-			return self::page( $row, 400, __( 'The file could not be received. Try again.', 'md3-wp-mcp' ) );
+			return self::retry( 400, __( 'The file could not be received. Try again.', 'md3-wp-mcp' ) );
 		}
 
 		$parent = 0;
 		if ( (int) $row->attach_to > 0 ) {
 			$parent = Upload_Media::resolve_parent( (int) $row->attach_to );
 			if ( is_wp_error( $parent ) ) {
-				return self::page( $row, (int) ( $parent->get_error_data()['status'] ?? 400 ), $parent->get_error_message() );
+				return self::retry( (int) ( $parent->get_error_data()['status'] ?? 400 ), $parent->get_error_message() );
 			}
 			// The post went live after the link was made: attaching to it
 			// needs a link made with the publish scope.
 			$post = get_post( $parent );
 			if ( ! $row->can_publish && $post && in_array( $post->post_status, Ability::LIVE_STATUSES, true ) ) {
-				return self::page( $row, 403, __( 'The content this image goes with is now published, and this link was not made with permission to change published content.', 'md3-wp-mcp' ) );
+				return self::retry( 403, __( 'The content this image goes with is now published, and this link was not made with permission to change published content.', 'md3-wp-mcp' ) );
 			}
 		}
 
 		$name = Upload_Media::prepare( (string) $file['tmp_name'], sanitize_file_name( wp_basename( (string) ( $file['name'] ?? '' ) ) ) );
 		if ( is_wp_error( $name ) ) {
-			return self::page( $row, (int) ( $name->get_error_data()['status'] ?? 400 ), $name->get_error_message() );
+			return self::retry( (int) ( $name->get_error_data()['status'] ?? 400 ), $name->get_error_message() );
 		}
 
-		if ( ! Upload_Links::claim( (string) $row->id ) ) {
+		$link_id = (string) $row->id;
+		if ( ! Upload_Links::claim( $link_id ) ) {
 			wp_delete_file( (string) $file['tmp_name'] );
 			return self::error( 410, esc_html__( 'This upload link has already been used or has expired. Ask the AI for a new one.', 'md3-wp-mcp' ) );
 		}
 
-		$media = Upload_Media::insert( (string) $file['tmp_name'], $name, Upload_Links::details( $row ), $parent );
-		if ( is_wp_error( $media ) ) {
-			Upload_Links::release( (string) $row->id );
-			self::log( $row, 'error', $media->get_error_code() );
-			return self::page( $row, 500, __( 'The image could not be saved. Try again.', 'md3-wp-mcp' ) );
+		// Record the attachment as soon as it exists, before the image sizes
+		// are made: if PHP dies there, the link still points to the image.
+		$record = static function ( $attachment_id ) use ( $link_id ): void {
+			Upload_Links::complete( $link_id, (int) $attachment_id );
+		};
+		add_action( 'add_attachment', $record, 1 );
+		try {
+			$media = Upload_Media::insert( (string) $file['tmp_name'], $name, Upload_Links::details( $row ), $parent );
+		} finally {
+			remove_action( 'add_attachment', $record, 1 );
 		}
 
-		Upload_Links::complete( (string) $row->id, (int) $media['id'] );
-		self::log( $row, 'ok', 'used', (int) $media['id'] );
+		if ( is_wp_error( $media ) ) {
+			Upload_Links::release( $link_id );
+			self::log( $row, 'error', $media->get_error_code() );
+			return self::retry( 500, __( 'The image could not be saved. Try again.', 'md3-wp-mcp' ) );
+		}
 
-		return self::render( [ 'done' => true ], 200 );
+		Upload_Links::complete( $link_id, (int) $media['id'] );
+		self::log( $row, 'ok', 'used', (int) $media['id'] );
+		return true;
+	}
+
+	/**
+	 * @return array{status:int,message:string}
+	 */
+	private static function retry( int $status, string $message ): array {
+		return [
+			'status'  => $status,
+			'message' => $message,
+		];
+	}
+
+	private static function too_large(): string {
+		/* translators: %s: maximum file size, such as "10 MB". */
+		return sprintf( __( 'The file is larger than %s.', 'md3-wp-mcp' ), size_format( self::max_bytes() ) );
 	}
 
 	/**
@@ -236,7 +308,7 @@ final class Upload_Page {
 			'nonce_action' => '',
 			'expires_at'   => 0,
 			'site_name'    => get_bloginfo( 'name' ),
-			'max_mb'       => (int) ( Upload_Media::MAX_BYTES / MB_IN_BYTES ),
+			'max_size'     => size_format( self::max_bytes() ),
 		];
 
 		ob_start();
@@ -288,8 +360,15 @@ final class Upload_Page {
 			);
 		}
 
+		$headers = $result->get_headers();
+		if ( 303 === $result->get_status() ) {
+			header( 'Referrer-Policy: no-referrer' );
+			wp_safe_redirect( $headers['Location'], 303, 'MD3 WP MCP' );
+			exit;
+		}
+
 		status_header( $result->get_status() );
-		foreach ( $result->get_headers() as $name => $value ) {
+		foreach ( $headers as $name => $value ) {
 			header( $name . ': ' . $value );
 		}
 		echo $result->get_data(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by the escaped upload view.

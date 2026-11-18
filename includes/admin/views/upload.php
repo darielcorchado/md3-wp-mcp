@@ -2,7 +2,7 @@
 /**
  * The one-time upload page: a standalone page, no theme, no scripts.
  *
- * @var array{done: bool, error: string, nonce_action: string, expires_at: int, site_name: string, max_mb: int} $view
+ * @var array{done: bool, error: string, nonce_action: string, expires_at: int, site_name: string, max_size: string} $view
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -40,10 +40,10 @@ defined( 'ABSPATH' ) || exit;
 	<p>
 		<?php
 		printf(
-			/* translators: 1: site name, 2: maximum file size in MB. */
-			esc_html__( 'The image is added to the media library of %1$s for your AI conversation. JPEG, PNG, WebP or GIF, up to %2$d MB.', 'md3-wp-mcp' ),
+			/* translators: 1: site name, 2: maximum file size, such as "10 MB". */
+			esc_html__( 'The image is added to the media library of %1$s for your AI conversation. JPEG, PNG, WebP or GIF, up to %2$s.', 'md3-wp-mcp' ),
 			esc_html( $view['site_name'] ),
-			(int) $view['max_mb']
+			esc_html( $view['max_size'] )
 		);
 		?>
 	</p>

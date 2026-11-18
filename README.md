@@ -118,7 +118,7 @@ An AI client can't pass on an image the user attached in the chat: it has no pub
 - The link is the permission: the user doesn't sign in. The image is always added as the MCP user, even when the browser is signed in as an administrator.
 - A link works once and expires after 10 minutes. It belongs to the connection that made it: `get-upload` only answers that connection, and the page stops working when that connection is revoked or the MCP user changes.
 - Only the SHA-256 hash of the link's token is stored. The page is never cached, framed or indexed, and sends no referrer.
-- The file rules are those of `upload-media`: JPEG, PNG, WebP or GIF, up to 10 MB, checked from the file's content, which must decode as an image.
+- The file rules are those of `upload-media`: JPEG, PNG, WebP or GIF, up to 10 MB (or PHP's upload limit, if lower), checked from the file's content, which must decode as an image.
 - Each connection can create 10 links every 10 minutes. The page allows 30 requests per minute per IP. The log records each link created, used, refused and expired.
 
 ## Security model

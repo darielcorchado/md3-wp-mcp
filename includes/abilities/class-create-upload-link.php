@@ -3,7 +3,6 @@ namespace MD3\WPMCP\Abilities;
 
 use MD3\WPMCP\Auth\Request_Context;
 use MD3\WPMCP\Auth\Scopes;
-use MD3\WPMCP\Content_Sanitizer;
 use MD3\WPMCP\Rate_Limiter;
 use MD3\WPMCP\Uploads\Upload_Links;
 use MD3\WPMCP\Uploads\Upload_Page;
@@ -85,14 +84,13 @@ final class Create_Upload_Link extends Ability {
 			return new \WP_Error( 'md3_mcp_rate_limited', __( 'Too many upload links. Try again in a few minutes.', 'md3-wp-mcp' ), [ 'status' => 429 ] );
 		}
 
-		$details = [];
-		foreach ( [ 'alt', 'title', 'caption' ] as $field ) {
-			if ( isset( $input[ $field ] ) ) {
-				$details[ $field ] = Content_Sanitizer::plain( (string) $input[ $field ] );
-			}
-		}
+		// Upload_Media::insert() sanitizes these when the image is added.
+		$details = array_map( 'strval', array_intersect_key( $input, array_flip( [ 'alt', 'title', 'caption' ] ) ) );
 
 		$link = Upload_Links::create( $identity, $parent, $details, Request_Context::has_scope( Scopes::PUBLISH ) );
+		if ( is_wp_error( $link ) ) {
+			return $link;
+		}
 
 		return [
 			'upload_id'    => $link['id'],
