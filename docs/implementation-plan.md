@@ -34,7 +34,7 @@
 **Plugin identity**
 - Main file: `md3-wp-mcp.php`.
 - Namespace `MD3\WPMCP`. Text domain `md3-wp-mcp`. License GPL-2.0-or-later.
-- Header fields: `Requires at least: 6.9`, `Requires PHP: 8.2`. Author `Dariel Corchado, Jenrry Cordero`, same as `md3-ai-connector`.
+- Header fields: `Requires at least: 6.9`, `Requires PHP: 8.2`. Author `Dariel Corchado`.
 
 **Dependencies**
 - `composer.json` sets `config.platform.php = "8.2.0"`. Runtime and dev dependencies live in one `composer.json`.

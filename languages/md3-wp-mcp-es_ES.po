@@ -38,8 +38,8 @@ msgstr ""
 
 #. Author of the plugin
 #: md3-wp-mcp.php
-msgid "Dariel Corchado, Jenrry Cordero"
-msgstr "Dariel Corchado, Jenrry Cordero"
+msgid "Dariel Corchado"
+msgstr "Dariel Corchado"
 
 #: includes/abilities/class-ability.php:90
 msgid "The access token does not grant the scope this tool needs."

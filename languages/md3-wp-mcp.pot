@@ -1,4 +1,4 @@
-# Copyright (C) 2026 Dariel Corchado, Jenrry Cordero
+# Copyright (C) 2026 Dariel Corchado
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
@@ -33,7 +33,7 @@ msgstr ""
 
 #. Author of the plugin
 #: md3-wp-mcp.php
-msgid "Dariel Corchado, Jenrry Cordero"
+msgid "Dariel Corchado"
 msgstr ""
 
 #: includes/abilities/class-ability.php:90
