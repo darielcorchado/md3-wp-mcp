@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-<!-- synced-with: 8cc8c12 -->
+<!-- synced-with: f0fc54e -->
 <!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
 
 MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
@@ -27,18 +27,20 @@ If the first `bin/test.sh` after starting Docker fails with `db_connect_fail`, r
 md3-wp-mcp.php          Header, constants, requirement checks, boots Plugin on plugins_loaded
 uninstall.php           Drops the tables, options and transients
 includes/
-  class-plugin.php      boot(): schema upgrade, abilities, MCP server, OAuth, cleanup cron, admin
-  class-schema.php      Tables {prefix}md3_mcp_{clients,auth_codes,access_tokens,refresh_tokens,log}; DB_VERSION
+  class-plugin.php      boot(): schema upgrade, abilities, MCP server, OAuth, upload page, cleanup cron, admin
+  class-schema.php      Tables {prefix}md3_mcp_{clients,auth_codes,access_tokens,refresh_tokens,log,uploads}; DB_VERSION
   class-settings.php    Options md3_wp_mcp_{post_types,default_author,security} with defaults
   class-content-sanitizer.php  kses + block checks for every write
   class-rate-limiter.php, class-audit-log.php, class-cleanup.php
   abilities/            One class per MCP tool, extends Ability; Registry lists them.
-                        Content_Writer (shared create/update, Brevo opt-out) and Content_Formatter (output)
+                        Content_Writer (shared create/update, Brevo opt-out) and Content_Formatter (output);
+                        Upload_Media::prepare()/insert() hold the file rules for every upload
   auth/                 Identity, Request_Context (per-request token identity), Scopes
   mcp/                  Server (creates the adapter server, transport permission), Error_Handler
   oauth/                league/oauth2-server wiring: Discovery, Registration (DCR), Cimd, Authorize
                         (consent), Token_Endpoint, Bearer_Guard, Keys, Tokens; entities/, repositories/
   admin/                Settings_Page (tabs in views/), Diagnostics, Profile_Connections
+  uploads/              Upload_Links (one-time links, hashed tokens), Upload_Page (/md3-mcp/upload/<token>)
 languages/              .pot, es_ES .po/.mo
 tests/integration/      PHPUnit tests, one file per area; helpers in tests/helpers/class-test-case.php
 docs/                   design.md, implementation-plan.md, development.md
@@ -59,6 +61,7 @@ docs/                   design.md, implementation-plan.md, development.md
 - The MCP user is an Editor and never an administrator (`manage_options` is refused, checked at read time).
 - Every write goes through `Content_Sanitizer` (`wp_kses_post` even with `unfiltered_html`).
 - Tools have no `author` input; the author comes from the "Author for new content" setting.
+- Upload links work once, for 10 minutes, only while their connection is live, and the upload always runs as the MCP user, whoever is signed in in the browser.
 - Trash only, never a permanent delete. `trash-content` refuses when the site's trash is disabled.
 - Changing live content (published, scheduled, private) also needs `content:publish`.
 - Content created or published over MCP never sends the Brevo web push.
