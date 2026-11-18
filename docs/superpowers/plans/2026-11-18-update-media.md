@@ -60,7 +60,7 @@ Error codes: `md3_mcp_not_found` (404) for anything that isn't an image attachme
 - [ ] **Step 1: Write the failing tests** in `test-update-media.php` (writer = `as_mcp_user( [ 'content:read', 'content:write' ] )`, image = `self::factory()->attachment->create( [ 'post_mime_type' => 'image/png', 'post_title' => 'Old' ] )`):
   - `test_updates_only_the_fields_sent`: `alt => 'A dog'`, `caption => 'In the park'`; alt meta is `A dog`, `post_excerpt` is `In the park`, `post_title` still `Old`; the result's `alt` is `A dog` and `id` is the image.
   - `test_updates_title_and_description`: `post_title` and `post_content` change.
-  - `test_fields_are_saved_as_plain_text`: `alt => '<script>alert(1)</script>Dog'`, `title => '<b>Hi</b>'`; alt meta `Dog`... use `wp_strip_all_tags` semantics: assert alt meta is `Dog` and title is `Hi`.
+  - `test_fields_are_saved_as_plain_text`: `alt => '<script>alert(1)</script>Dog'`, `title => '<b>Hi</b>'`; alt meta is `Dog` (`wp_strip_all_tags` drops the script and its content) and the title is `Hi`.
   - `test_an_empty_alt_clears_it`: alt set to `x`, then `alt => ''`; alt meta is `''`.
   - `test_needs_at_least_one_field`: only `id`; `md3_mcp_no_changes`.
   - `test_only_images_can_be_updated`: a post ID, a `application/pdf` attachment, and `999999` each give `md3_mcp_not_found`; nothing changes.
