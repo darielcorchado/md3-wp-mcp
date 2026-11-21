@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 - 2026-11-21
 
 - Development only, nothing changes for sites:
   - GitHub runs the tests on every pull request into `stage` and `master`.
