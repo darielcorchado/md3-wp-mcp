@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-<!-- synced-with: 21eb80e -->
+<!-- synced-with: d1bd166 -->
 <!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
 
 MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
@@ -44,7 +44,7 @@ includes/
   uploads/              Upload_Links (one-time links, hashed tokens), Upload_Page (/md3-mcp/upload/<token>)
 languages/              .pot, es_ES .po/.mo
 tests/integration/      PHPUnit tests, one file per area; helpers in tests/helpers/class-test-case.php
-docs/                   design.md, implementation-plan.md, development.md
+docs/                   design.md, implementation-plan.md, development.md, troubleshooting.md (firewall blocks)
 ```
 
 ## How a tool call is checked

@@ -62,6 +62,25 @@ $md3_security = $view['security'];
 
 <h2><?php esc_html_e( 'Diagnostics', 'md3-wp-mcp' ); ?></h2>
 <p><?php esc_html_e( 'Checks that the web server and any page cache let the sign-in flow through. The site requests itself.', 'md3-wp-mcp' ); ?></p>
+<p>
+	<?php
+	echo wp_kses(
+		sprintf(
+			/* translators: 1: link to the troubleshooting guide, 2: link to the developer's contact page. */
+			__( 'If every check passes and an AI client still cannot connect, a firewall may be blocking it before it reaches WordPress. See the %1$s, or %2$s.', 'md3-wp-mcp' ),
+			'<a href="' . esc_url( \MD3\WPMCP\Admin\Diagnostics::GUIDE_URL ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'troubleshooting guide', 'md3-wp-mcp' ) . '</a>',
+			'<a href="' . esc_url( \MD3\WPMCP\Admin\Diagnostics::CONTACT_URL ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'contact the developer', 'md3-wp-mcp' ) . '</a>'
+		),
+		[
+			'a' => [
+				'href'   => [],
+				'target' => [],
+				'rel'    => [],
+			],
+		]
+	);
+	?>
+</p>
 <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 	<input type="hidden" name="action" value="md3_mcp_run_diagnostics">
 	<?php wp_nonce_field( 'md3_mcp_run_diagnostics' ); ?>

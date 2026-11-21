@@ -577,6 +577,14 @@ class Test_Admin extends Test_Case {
 		$this->assertStringContainsString( 'download them again', $html );
 	}
 
+	public function test_diagnostics_links_the_troubleshooting_guide() {
+		$this->assertSame( 'https://github.com/darielcorchado/md3-wp-mcp/blob/master/docs/troubleshooting.md', Diagnostics::GUIDE_URL );
+		$html = $this->render_security( null );
+		$this->assertStringContainsString( '<a href="' . esc_url( Diagnostics::GUIDE_URL ) . '" target="_blank" rel="noopener noreferrer">troubleshooting guide</a>', $html );
+		$this->assertSame( 'https://www.md3digitalsolutions.com/contact/?utm_source=md3-wp-mcp', Diagnostics::CONTACT_URL );
+		$this->assertStringContainsString( '<a href="' . esc_url( Diagnostics::CONTACT_URL ) . '" target="_blank" rel="noopener noreferrer">contact the developer</a>', $html );
+	}
+
 	public function test_auth_echo_route_compares_the_bearer_to_the_nonce() {
 		set_transient( 'md3_mcp_diag', 'secret-nonce', 60 );
 

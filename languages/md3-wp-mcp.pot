@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-18T20:17:46+00:00\n"
+"POT-Creation-Date: 2026-11-21T14:29:03+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: md3-wp-mcp\n"
@@ -445,94 +445,94 @@ msgstr ""
 msgid "Could not write the temporary file."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:71
+#: includes/admin/class-diagnostics.php:77
 msgid "OAuth keys load"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:77
+#: includes/admin/class-diagnostics.php:83
 msgid "Loaded."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:81
+#: includes/admin/class-diagnostics.php:87
 msgid "Protected resource metadata is served"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:85
+#: includes/admin/class-diagnostics.php:91
 msgid "Authorization server metadata is served"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:115
+#: includes/admin/class-diagnostics.php:121
 msgid "HTTP 404: OAuth is off because the site isn't served over HTTPS, so the plugin doesn't serve this document."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:118
+#: includes/admin/class-diagnostics.php:124
 msgid "HTTP 404: the web server doesn't pass this address to WordPress."
 msgstr ""
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:122
+#: includes/admin/class-diagnostics.php:128
 #, php-format
 msgid "HTTP %d."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:128
+#: includes/admin/class-diagnostics.php:134
 msgid "HTTP 200, but not a JSON document. Something else answers this address (a cache or a firewall challenge page)."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:131
+#: includes/admin/class-diagnostics.php:137
 msgid "HTTP 200, but the content is out of date: the site address, Automatic registration or the plugin changed, the file was edited, or a cache serves an old copy."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:137
+#: includes/admin/class-diagnostics.php:143
 msgid "HTTP 200, served by WordPress."
 msgstr ""
 
 #. translators: 1: Content-Type, 2: Cache-Control.
-#: includes/admin/class-diagnostics.php:140
+#: includes/admin/class-diagnostics.php:146
 #, php-format
 msgid "HTTP 200, a static file or cached copy with the expected content (Content-Type \"%1$s\", Cache-Control \"%2$s\")."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:178
+#: includes/admin/class-diagnostics.php:184
 msgid "The MCP endpoint refuses requests without a token"
 msgstr ""
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:196
+#: includes/admin/class-diagnostics.php:202
 #, php-format
 msgid "HTTP %1$d, WWW-Authenticate header: %2$s."
 msgstr ""
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:196
+#: includes/admin/class-diagnostics.php:202
 msgid "yes"
 msgstr ""
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:196
+#: includes/admin/class-diagnostics.php:202
 msgid "no"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:200
+#: includes/admin/class-diagnostics.php:206
 msgid "The Authorization header reaches PHP"
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:218
+#: includes/admin/class-diagnostics.php:224
 msgid "Received."
 msgstr ""
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:220
+#: includes/admin/class-diagnostics.php:226
 #, php-format
 msgid "Not received (HTTP %d). The web server strips the Authorization header; pass it to PHP."
 msgstr ""
 
-#: includes/admin/class-diagnostics.php:225
+#: includes/admin/class-diagnostics.php:231
 msgid "The authorize page is reachable and not cached or redirected"
 msgstr ""
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:233
+#: includes/admin/class-diagnostics.php:239
 #, php-format
 msgid "HTTP %d without parameters (400 expected)."
 msgstr ""
@@ -845,7 +845,7 @@ msgstr ""
 
 #: includes/admin/views/tab-log.php:23
 #: includes/admin/views/tab-log.php:45
-#: includes/admin/views/tab-security.php:74
+#: includes/admin/views/tab-security.php:93
 msgid "Result"
 msgstr ""
 
@@ -938,23 +938,37 @@ msgstr ""
 msgid "Checks that the web server and any page cache let the sign-in flow through. The site requests itself."
 msgstr ""
 
-#: includes/admin/views/tab-security.php:68
+#. translators: 1: link to the troubleshooting guide, 2: link to the developer's contact page.
+#: includes/admin/views/tab-security.php:70
+#, php-format
+msgid "If every check passes and an AI client still cannot connect, a firewall may be blocking it before it reaches WordPress. See the %1$s, or %2$s."
+msgstr ""
+
+#: includes/admin/views/tab-security.php:71
+msgid "troubleshooting guide"
+msgstr ""
+
+#: includes/admin/views/tab-security.php:72
+msgid "contact the developer"
+msgstr ""
+
+#: includes/admin/views/tab-security.php:87
 msgid "Run checks"
 msgstr ""
 
-#: includes/admin/views/tab-security.php:73
+#: includes/admin/views/tab-security.php:92
 msgid "Check"
 msgstr ""
 
-#: includes/admin/views/tab-security.php:75
+#: includes/admin/views/tab-security.php:94
 msgid "Detail"
 msgstr ""
 
-#: includes/admin/views/tab-security.php:81
+#: includes/admin/views/tab-security.php:100
 msgid "OK"
 msgstr ""
 
-#: includes/admin/views/tab-security.php:81
+#: includes/admin/views/tab-security.php:100
 msgid "Failed"
 msgstr ""
 

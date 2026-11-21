@@ -413,6 +413,7 @@ There is one page, **Settings > MD3 WP MCP**, with these tabs. It needs `manage_
   - The plugin sends `no-store` headers. A diagnostics box in the Security tab runs these checks against the site itself.
   - The discovery checks judge each document by its decoded content, not its headers: a static file or cached copy with the expected content passes. A 404 (while OAuth is active) offers the static files, different content offers fresh ones, and any other failure reports its reason without an offer.
   - GridPane's `location ~ /\.well-known { allow all; }` only serves files from disk, so the discovery documents need the static files there.
+  - Firewall blocks (GridPane 7G rules 5 and 10, Cloudflare and others) happen before WordPress, so Diagnostics can't see them. [troubleshooting.md](troubleshooting.md) covers them, with example 7G exceptions for GridPane.
 - **Polylang:** `/md3-mcp/authorize` and `/.well-known/*` must not get a language prefix. Check that on staging.
 - **Rank Math:** fields are written with `update_post_meta` on the three allowlisted keys.
 

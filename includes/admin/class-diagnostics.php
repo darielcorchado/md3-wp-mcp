@@ -17,6 +17,12 @@ final class Diagnostics {
 	const TRANSIENT = 'md3_mcp_diag';
 	const ROUTE     = '/diagnostics/auth-echo';
 
+	/** Firewall and server blocks these checks can't see (docs/troubleshooting.md). */
+	const GUIDE_URL = 'https://github.com/darielcorchado/md3-wp-mcp/blob/master/docs/troubleshooting.md';
+
+	/** The developer's contact page, tagged with the plugin as the source. */
+	const CONTACT_URL = 'https://www.md3digitalsolutions.com/contact/?utm_source=md3-wp-mcp';
+
 	public static function register(): void {
 		add_action( 'rest_api_init', [ self::class, 'register_routes' ] );
 	}

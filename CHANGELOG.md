@@ -4,6 +4,7 @@
 
 - When the web server never passes `/.well-known/` to WordPress (as on GridPane), Diagnostics offers the two discovery documents as files to upload: a ZIP with the folder structure, or each file on its own, with instructions. The plugin never writes the files itself; the ZIP is built in memory, and the download is for administrators only.
 - The discovery checks now judge each document by its content: a static file with the expected content passes whatever its headers, and one that is out of date (after the site address or Automatic registration changed) is reported with fresh files.
+- New troubleshooting guide, `docs/troubleshooting.md`, for firewall and server blocks Diagnostics can't see (GridPane 7G rules 5 and 10, Cloudflare, Wordfence, ModSecurity, Sucuri), linked from the README and the Diagnostics section.
 - Saving the Security tab with a different Automatic registration setting reminds you to download the discovery files again if you serve them from disk.
 
 ## 0.2.0 - 2026-11-18
