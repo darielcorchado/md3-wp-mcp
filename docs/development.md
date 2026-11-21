@@ -36,6 +36,7 @@ The tests are PHPUnit integration tests against a real WordPress and a real MySQ
 | `test-upload-links.php` | `create-upload-link`, the upload page, `get-upload`, `list-media` |
 | `test-update-media.php` | `update-media` |
 | `test-oauth-core.php`, `test-oauth-endpoints.php` | Keys, tokens, discovery, registration, authorize, token, revoke |
+| `test-discovery-files.php` | The static discovery files: ZIP and admin-only download |
 | `test-bearer-guard.php` | Which routes accept the token |
 | `test-mcp-server.php` | The MCP server and its transport permission |
 | `test-settings.php`, `test-admin.php`, `test-activation.php` | Settings, admin screens, activation and schema |

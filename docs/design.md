@@ -189,6 +189,7 @@ Design notes:
   - Clients find it through the `authorization_servers` list in the protected resource metadata.
   - The bare protected-resource append form is served only if no other plugin answers it first. Clients reach the path-insert form from the `WWW-Authenticate` header anyway.
 - `/.well-known/*` and `/md3-mcp/authorize` are handled early on `parse_request`, before any theme output. They are sent with `Cache-Control: no-store`.
+- **Static discovery files (MD3-32).** Some web servers never pass `/.well-known/` to WordPress. For them, `Discovery::static_files()` builds the two documents as files from the same metadata, and `Admin\Discovery_Files` sends them to an administrator (`manage_options`, nonce) as a ZIP built in memory or one by one. The plugin never writes, moves or deletes a file. The files hold only public metadata. The authorization server document lists `registration_endpoint` only while DCR is on, so changing that setting or the site address makes uploaded files out of date; Diagnostics says so.
 - **The authorize page is a front-end URL, not `admin.php?page=…`.**
   - Some clients build the URL by adding `?…` to the advertised endpoint, and that breaks an endpoint that already has a query string.
   - The handler calls `auth_redirect()`, so WordPress's normal login (cookie) identifies the user. It then shows a standalone consent page.
@@ -410,6 +411,8 @@ There is one page, **Settings > MD3 WP MCP**, with these tabs. It needs `manage_
 - **GridPane / Nginx:**
   - Check that `Authorization` reaches PHP, and that `/.well-known/oauth-*`, `/md3-mcp/authorize`, `/md3-mcp/upload/*` and `/wp-json/*` aren't cached by the Nginx page cache, redirected or challenged. Let's Encrypt only uses `/.well-known/acme-challenge/`.
   - The plugin sends `no-store` headers. A diagnostics box in the Security tab runs these checks against the site itself.
+  - The discovery checks judge each document by its decoded content, not its headers: a static file or cached copy with the expected content passes. A 404 (while OAuth is active) offers the static files, different content offers fresh ones, and any other failure reports its reason without an offer.
+  - GridPane's `location ~ /\.well-known { allow all; }` only serves files from disk, so the discovery documents need the static files there.
 - **Polylang:** `/md3-mcp/authorize` and `/.well-known/*` must not get a language prefix. Check that on staging.
 - **Rank Math:** fields are written with `update_post_meta` on the three allowlisted keys.
 

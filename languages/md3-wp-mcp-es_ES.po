@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: MD3 WP MCP 0.2.0\n"
+"Project-Id-Version: MD3 WP MCP 0.3.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
-"POT-Creation-Date: 2026-11-18T19:21:41+00:00\n"
+"POT-Creation-Date: 2026-11-18T20:17:46+00:00\n"
 "PO-Revision-Date: 2026-11-18T12:00:00+00:00\n"
 "Last-Translator: Dariel Corchado\n"
 "Language-Team: Spanish (Spain)\n"
@@ -556,65 +556,97 @@ msgstr "No se pudo crear un archivo temporal."
 msgid "Could not write the temporary file."
 msgstr "No se pudo escribir el archivo temporal."
 
-#: includes/admin/class-diagnostics.php:70
+#: includes/admin/class-diagnostics.php:71
 msgid "OAuth keys load"
 msgstr "Las claves OAuth se cargan"
 
-#: includes/admin/class-diagnostics.php:76
+#: includes/admin/class-diagnostics.php:77
 msgid "Loaded."
 msgstr "Cargadas."
 
-#: includes/admin/class-diagnostics.php:80
-msgid "Protected resource metadata is served and not cached"
-msgstr ""
-"Los metadatos del recurso protegido se sirven y no se almacenan en caché"
+#: includes/admin/class-diagnostics.php:81
+msgid "Protected resource metadata is served"
+msgstr "Los metadatos del recurso protegido se sirven"
 
-#. translators: 1: HTTP status, 2: Content-Type, 3: Cache-Control.
-#: includes/admin/class-diagnostics.php:92
-#, php-format
-msgid "HTTP %1$d, Content-Type \"%2$s\", Cache-Control \"%3$s\"."
-msgstr "HTTP %1$d, Content-Type \"%2$s\", Cache-Control \"%3$s\"."
-
-#: includes/admin/class-diagnostics.php:96
+#: includes/admin/class-diagnostics.php:85
 msgid "Authorization server metadata is served"
 msgstr "Los metadatos del servidor de autorización se sirven"
 
+#: includes/admin/class-diagnostics.php:115
+msgid ""
+"HTTP 404: OAuth is off because the site isn't served over HTTPS, so the "
+"plugin doesn't serve this document."
+msgstr "HTTP 404: OAuth está desactivado porque el sitio no se sirve por HTTPS, así que el plugin no sirve este documento."
+
+#: includes/admin/class-diagnostics.php:118
+msgid "HTTP 404: the web server doesn't pass this address to WordPress."
+msgstr "HTTP 404: el servidor web no pasa esta dirección a WordPress."
+
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:107
+#: includes/admin/class-diagnostics.php:122
 #, php-format
 msgid "HTTP %d."
 msgstr "HTTP %d."
 
-#: includes/admin/class-diagnostics.php:111
+#: includes/admin/class-diagnostics.php:128
+msgid ""
+"HTTP 200, but not a JSON document. Something else answers this address (a "
+"cache or a firewall challenge page)."
+msgstr ""
+"HTTP 200, pero no es un documento JSON. Otra cosa responde en esta dirección "
+"(una caché o una página de desafío del cortafuegos)."
+
+#: includes/admin/class-diagnostics.php:131
+msgid ""
+"HTTP 200, but the content is out of date: the site address, Automatic "
+"registration or the plugin changed, the file was edited, or a cache serves "
+"an old copy."
+msgstr "HTTP 200, pero el contenido está desactualizado: cambió la dirección del sitio, el registro automático o el plugin, alguien editó el archivo, o una caché sirve una copia antigua."
+
+#: includes/admin/class-diagnostics.php:137
+msgid "HTTP 200, served by WordPress."
+msgstr "HTTP 200, servido por WordPress."
+
+#. translators: 1: Content-Type, 2: Cache-Control.
+#: includes/admin/class-diagnostics.php:140
+#, php-format
+msgid ""
+"HTTP 200, a static file or cached copy with the expected content (Content-"
+"Type \"%1$s\", Cache-Control \"%2$s\")."
+msgstr ""
+"HTTP 200, un archivo estático o una copia en caché con el contenido esperado "
+"(Content-Type \"%1$s\", Cache-Control \"%2$s\")."
+
+#: includes/admin/class-diagnostics.php:178
 msgid "The MCP endpoint refuses requests without a token"
 msgstr "El endpoint MCP rechaza las solicitudes sin token"
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:129
+#: includes/admin/class-diagnostics.php:196
 #, php-format
 msgid "HTTP %1$d, WWW-Authenticate header: %2$s."
 msgstr "HTTP %1$d, encabezado WWW-Authenticate: %2$s."
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:129
+#: includes/admin/class-diagnostics.php:196
 msgid "yes"
 msgstr "sí"
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:129
+#: includes/admin/class-diagnostics.php:196
 msgid "no"
 msgstr "no"
 
-#: includes/admin/class-diagnostics.php:133
+#: includes/admin/class-diagnostics.php:200
 msgid "The Authorization header reaches PHP"
 msgstr "El encabezado Authorization llega a PHP"
 
-#: includes/admin/class-diagnostics.php:151
+#: includes/admin/class-diagnostics.php:218
 msgid "Received."
 msgstr "Recibido."
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:153
+#: includes/admin/class-diagnostics.php:220
 #, php-format
 msgid ""
 "Not received (HTTP %d). The web server strips the Authorization header; pass "
@@ -623,16 +655,26 @@ msgstr ""
 "No recibido (HTTP %d). El servidor web elimina el encabezado Authorization; "
 "páselo a PHP."
 
-#: includes/admin/class-diagnostics.php:158
+#: includes/admin/class-diagnostics.php:225
 msgid "The authorize page is reachable and not cached or redirected"
 msgstr ""
 "La página de autorización es accesible y no está en caché ni redirigida"
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:166
+#: includes/admin/class-diagnostics.php:233
 #, php-format
 msgid "HTTP %d without parameters (400 expected)."
 msgstr "HTTP %d sin parámetros (se esperaba 400)."
+
+#: includes/admin/class-discovery-files.php:43
+#: includes/admin/class-settings-page.php:69
+#: includes/admin/class-settings-page.php:199
+msgid "You are not allowed to do this."
+msgstr "Usted no tiene permiso para hacer esto."
+
+#: includes/admin/class-discovery-files.php:50
+msgid "Unknown file."
+msgstr "Archivo desconocido."
 
 #: includes/admin/class-profile-connections.php:28
 msgid "AI connections"
@@ -664,57 +706,60 @@ msgstr "Último uso"
 msgid "Revoke"
 msgstr "Revocar"
 
-#: includes/admin/class-settings-page.php:50
+#: includes/admin/class-settings-page.php:51
 msgid "Content"
 msgstr "Contenido"
 
-#: includes/admin/class-settings-page.php:51
-#: includes/admin/class-settings-page.php:218
+#: includes/admin/class-settings-page.php:52
+#: includes/admin/class-settings-page.php:223
 msgid "Security"
 msgstr "Seguridad"
 
-#: includes/admin/class-settings-page.php:52
+#: includes/admin/class-settings-page.php:53
 msgid "Connections"
 msgstr "Conexiones"
 
-#: includes/admin/class-settings-page.php:53
+#: includes/admin/class-settings-page.php:54
 msgid "Log"
 msgstr "Registro"
 
-#: includes/admin/class-settings-page.php:54
+#: includes/admin/class-settings-page.php:55
 msgid "Connect"
 msgstr "Conectar"
 
-#: includes/admin/class-settings-page.php:64
+#: includes/admin/class-settings-page.php:65
 msgid "Unknown action."
 msgstr "Acción desconocida."
 
-#: includes/admin/class-settings-page.php:68
-#: includes/admin/class-settings-page.php:194
-msgid "You are not allowed to do this."
-msgstr "Usted no tiene permiso para hacer esto."
-
-#: includes/admin/class-settings-page.php:172
+#: includes/admin/class-settings-page.php:176
 msgid "Settings saved."
 msgstr "Ajustes guardados."
 
-#: includes/admin/class-settings-page.php:173
+#: includes/admin/class-settings-page.php:177
+msgid ""
+"Settings saved. If you serve the discovery files from disk, run the checks "
+"and download them again."
+msgstr ""
+"Ajustes guardados. Si sirve los archivos de descubrimiento desde el disco, "
+"ejecute las comprobaciones y descárguelos de nuevo."
+
+#: includes/admin/class-settings-page.php:178
 msgid "Connection revoked."
 msgstr "Conexión revocada."
 
-#: includes/admin/class-settings-page.php:174
+#: includes/admin/class-settings-page.php:179
 msgid "No active connection matched, so nothing was revoked."
 msgstr "Ninguna conexión activa coincidía, así que no se revocó nada."
 
-#: includes/admin/class-settings-page.php:175
+#: includes/admin/class-settings-page.php:180
 msgid "All connections revoked."
 msgstr "Todas las conexiones fueron revocadas."
 
-#: includes/admin/class-settings-page.php:176
+#: includes/admin/class-settings-page.php:181
 msgid "Keys rotated. Every client has to connect again."
 msgstr "Claves rotadas. Todos los clientes deben volver a conectarse."
 
-#: includes/admin/class-settings-page.php:177
+#: includes/admin/class-settings-page.php:182
 msgid ""
 "Keys are set in wp-config.php and were not changed; every connection was "
 "revoked."
@@ -722,16 +767,16 @@ msgstr ""
 "Las claves están definidas en wp-config.php y no se cambiaron; se revocaron "
 "todas las conexiones."
 
-#: includes/admin/class-settings-page.php:178
+#: includes/admin/class-settings-page.php:183
 msgid "Checks finished."
 msgstr "Comprobaciones finalizadas."
 
-#: includes/admin/class-settings-page.php:187
+#: includes/admin/class-settings-page.php:192
 msgid "Never"
 msgstr "Nunca"
 
 #. translators: %s: link to the Security tab.
-#: includes/admin/class-settings-page.php:217
+#: includes/admin/class-settings-page.php:222
 #, php-format
 msgid ""
 "The MCP user is not set, so no AI client can connect. Choose one on the %s "
@@ -777,6 +822,101 @@ msgstr "Denegar"
 #, php-format
 msgid "Signed in as %s. The connection will act as this user."
 msgstr "Sesión iniciada como %s. La conexión actuará como este usuario."
+
+#: includes/admin/views/discovery-files.php:21
+msgid "Show the discovery files anyway"
+msgstr "Mostrar los archivos de descubrimiento de todos modos"
+
+#: includes/admin/views/discovery-files.php:22
+msgid "(for hosts where these checks cannot run)"
+msgstr "(para alojamientos donde estas comprobaciones no pueden ejecutarse)"
+
+#: includes/admin/views/discovery-files.php:29
+msgid ""
+"Your web server does not pass /.well-known/ to WordPress, so AI clients "
+"cannot find the sign-in server. Upload these two files and the web server "
+"will serve them itself. The plugin never writes files on your server."
+msgstr ""
+"Su servidor web no pasa /.well-known/ a WordPress, así que los clientes de "
+"IA no encuentran el servidor de inicio de sesión. Suba estos dos archivos y "
+"el servidor web los servirá directamente. El plugin nunca escribe archivos "
+"en su servidor."
+
+#: includes/admin/views/discovery-files.php:30
+msgid ""
+"The discovery documents your site returns are out of date. If you uploaded "
+"the files, download them again and replace the old ones. If you did not, a "
+"page cache or CDN serves an old copy: purge it and click \"Check again\"."
+msgstr "Los documentos de descubrimiento que devuelve su sitio están desactualizados. Si subió los archivos, descárguelos de nuevo y reemplace los anteriores. Si no, una caché de páginas o una CDN sirve una copia antigua: púrguela y haga clic en \"Comprobar de nuevo\"."
+
+#: includes/admin/views/discovery-files.php:31
+msgid ""
+"If your web server does not pass /.well-known/ to WordPress, upload these "
+"two files and the web server will serve them itself. The plugin never writes "
+"files on your server."
+msgstr ""
+"Si su servidor web no pasa /.well-known/ a WordPress, suba estos dos "
+"archivos y el servidor web los servirá directamente. El plugin nunca escribe "
+"archivos en su servidor."
+
+#: includes/admin/views/discovery-files.php:35
+msgid "Discovery files"
+msgstr "Archivos de descubrimiento"
+
+#: includes/admin/views/discovery-files.php:37
+msgid "Download the ZIP"
+msgstr "Descargar el ZIP"
+
+#: includes/admin/views/discovery-files.php:38
+msgid "Or each file on its own:"
+msgstr "O cada archivo por separado:"
+
+#: includes/admin/views/discovery-files.php:45
+msgid "How to install them"
+msgstr "Cómo instalarlos"
+
+#. translators: 1: htdocs, 2: public_html, 3: web (folder names, in code tags).
+#: includes/admin/views/discovery-files.php:52
+#, php-format
+msgid ""
+"Extract the ZIP in the folder that your domain's root address serves: the "
+"web root, such as %1$s or %2$s, or %3$s on Bedrock. That is not always the "
+"WordPress folder. Or upload the two files by FTP to the same paths."
+msgstr ""
+"Extraiga el ZIP en la carpeta que sirve la dirección raíz de su dominio: la "
+"raíz web, como %1$s o %2$s, o %3$s en Bedrock. No siempre es la carpeta de "
+"WordPress. O suba los dos archivos por FTP a las mismas rutas."
+
+#. translators: %s: .well-known (folder name, in code tags).
+#: includes/admin/views/discovery-files.php:66
+#, php-format
+msgid ""
+"%s is a hidden folder and the files have no extension. That is expected; do "
+"not rename them."
+msgstr ""
+"%s es una carpeta oculta y los archivos no tienen extensión. Es lo esperado; "
+"no les cambie el nombre."
+
+#: includes/admin/views/discovery-files.php:74
+msgid "Each file must open at this exact address:"
+msgstr "Cada archivo debe abrirse en esta dirección exacta:"
+
+#: includes/admin/views/discovery-files.php:81
+msgid "Click \"Check again\"."
+msgstr "Haga clic en \"Comprobar de nuevo\"."
+
+#. translators: %s: .well-known (folder name, in code tags).
+#: includes/admin/views/discovery-files.php:87
+#, php-format
+msgid ""
+"Download them again after changing the site address or Automatic "
+"registration, and after updating the plugin. When you uninstall the plugin, "
+"delete these two files, not the whole %s folder (Let's Encrypt uses it)."
+msgstr "Descárguelos de nuevo después de cambiar la dirección del sitio o el registro automático, y después de actualizar el plugin. Cuando desinstale el plugin, borre estos dos archivos, no toda la carpeta %s (Let's Encrypt la usa)."
+
+#: includes/admin/views/discovery-files.php:99
+msgid "Check again"
+msgstr "Comprobar de nuevo"
 
 #: includes/admin/views/tab-connect.php:12
 msgid "Claude (web, desktop, mobile)"

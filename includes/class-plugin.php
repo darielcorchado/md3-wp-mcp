@@ -32,6 +32,7 @@ final class Plugin {
 		Admin\Diagnostics::register();
 		if ( is_admin() ) {
 			Admin\Settings_Page::register();
+			Admin\Discovery_Files::register();
 			Admin\Profile_Connections::register();
 		}
 	}

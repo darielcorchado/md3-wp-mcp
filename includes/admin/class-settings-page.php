@@ -1,6 +1,7 @@
 <?php
 namespace MD3\WPMCP\Admin;
 
+use MD3\WPMCP\OAuth\Discovery;
 use MD3\WPMCP\OAuth\Keys;
 use MD3\WPMCP\OAuth\Tokens;
 use MD3\WPMCP\Settings;
@@ -97,7 +98,8 @@ final class Settings_Page {
 
 	/** @return array{0:string,1:string} */
 	private static function save_security(): array {
-		$old_user = (int) Settings::security()['mcp_user_id'];
+		$old      = Settings::security();
+		$old_user = (int) $old['mcp_user_id'];
 		Settings::update_security(
 			[
 				'mcp_user_id'    => self::request_int( 'mcp_user_id' ),
@@ -109,7 +111,9 @@ final class Settings_Page {
 		if ( $old_user > 0 && (int) Settings::security()['mcp_user_id'] !== $old_user ) {
 			Tokens::revoke_all();
 		}
-		return [ 'security', 'saved' ];
+		// The authorization server document lists the registration endpoint
+		// only while DCR is on, so uploaded discovery files go out of date.
+		return [ 'security', Settings::security()['dcr'] !== $old['dcr'] ? 'saved_dcr' : 'saved' ];
 	}
 
 	/** @return array{0:string,1:string} */
@@ -170,6 +174,7 @@ final class Settings_Page {
 	public static function notice_messages(): array {
 		return [
 			'saved'          => __( 'Settings saved.', 'md3-wp-mcp' ),
+			'saved_dcr'      => __( 'Settings saved. If you serve the discovery files from disk, run the checks and download them again.', 'md3-wp-mcp' ),
 			'revoked'        => __( 'Connection revoked.', 'md3-wp-mcp' ),
 			'not_revoked'    => __( 'No active connection matched, so nothing was revoked.', 'md3-wp-mcp' ),
 			'revoked_all'    => __( 'All connections revoked.', 'md3-wp-mcp' ),
@@ -205,7 +210,7 @@ final class Settings_Page {
 		echo '<div class="wrap"><h1>MD3 WP MCP</h1>';
 
 		if ( isset( $messages[ $notice ] ) ) {
-			$class = 'not_revoked' === $notice ? 'notice-warning' : 'notice-success';
+			$class = in_array( $notice, [ 'not_revoked', 'saved_dcr' ], true ) ? 'notice-warning' : 'notice-success';
 			echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $messages[ $notice ] ) . '</p></div>';
 		}
 		if ( 0 === Settings::mcp_user_id() ) {
@@ -272,10 +277,12 @@ final class Settings_Page {
 					static fn ( $user ) => ! user_can( $user, 'manage_options' )
 				);
 				$results = get_transient( self::diagnostics_key() );
+				$results = is_array( $results ) ? $results : null;
 				return [
-					'security'    => Settings::security(),
-					'editors'     => $editors,
-					'diagnostics' => is_array( $results ) ? $results : null,
+					'security'        => Settings::security(),
+					'editors'         => $editors,
+					'diagnostics'     => $results,
+					'discovery_files' => self::discovery_files_data( $results, \MD3\WPMCP\OAuth\OAuth::transport_allowed() ),
 				];
 
 			case 'connections':
@@ -287,6 +294,52 @@ final class Settings_Page {
 			default:
 				return [ 'url' => \MD3\WPMCP\OAuth\OAuth::resource_url() ];
 		}
+	}
+
+	/**
+	 * The discovery files box: shown when Diagnostics found the documents
+	 * missing or out of date, or when asked for with `md3_static=1`. Never
+	 * while OAuth is off (the files would advertise endpoints that don't run)
+	 * or with plain permalinks (the paths would end in `index.php`, and the
+	 * authorize page needs pretty permalinks anyway).
+	 *
+	 * @param array<array<string,mixed>>|null $results  Diagnostics rows.
+	 * @param bool                            $oauth_on OAuth::transport_allowed().
+	 * @return array{show: bool, reason: string, zip: string, files: array<array{path: string, url: string, download: string}>, show_url: string}
+	 */
+	public static function discovery_files_data( ?array $results, bool $oauth_on ): array {
+		if ( ! $oauth_on || '' === (string) get_option( 'permalink_structure' ) ) {
+			return [
+				'show'     => false,
+				'reason'   => '',
+				'zip'      => '',
+				'files'    => [],
+				'show_url' => '',
+			];
+		}
+
+		$reason = null === $results ? '' : Diagnostics::fix( $results );
+		$asked  = isset( $_GET['md3_static'] ) && '1' === $_GET['md3_static']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display choice.
+		if ( '' === $reason && $asked ) {
+			$reason = 'asked';
+		}
+
+		$files = [];
+		foreach ( array_combine( [ 'resource', 'server' ], array_keys( Discovery::static_file_urls() ) ) as $which => $path ) {
+			$files[] = [
+				'path'     => $path,
+				'url'      => Discovery::static_file_urls()[ $path ],
+				'download' => Discovery_Files::url( $which ),
+			];
+		}
+
+		return [
+			'show'     => '' !== $reason,
+			'reason'   => $reason,
+			'zip'      => Discovery_Files::url( 'zip' ),
+			'files'    => $files,
+			'show_url' => add_query_arg( 'md3_static', '1', self::tab_url( 'security' ) ) . '#md3-discovery-files',
+		];
 	}
 
 	/**

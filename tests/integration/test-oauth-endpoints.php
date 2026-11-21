@@ -83,6 +83,47 @@ class Test_Oauth_Endpoints extends Test_Case {
 		);
 	}
 
+	public function test_static_files_mirror_the_discovery_documents() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$resource = '.well-known/oauth-protected-resource/wp-json/md3-wp-mcp/mcp';
+		$server   = '.well-known/oauth-authorization-server/md3-mcp';
+
+		$files = Discovery::static_files();
+		$this->assertSame( [ $resource, $server ], array_keys( $files ) );
+		$this->assertSame( Discovery::protected_resource_metadata(), json_decode( $files[ $resource ], true ) );
+		$this->assertSame( Discovery::authorization_server_metadata(), json_decode( $files[ $server ], true ) );
+		foreach ( $files as $json ) {
+			$this->assertStringEndsWith( "}\n", $json );
+		}
+
+		$this->assertSame(
+			[
+				$resource => home_url( '/' . $resource ),
+				$server   => home_url( '/' . $server ),
+			],
+			Discovery::static_file_urls()
+		);
+		$this->assertSame( Discovery::protected_resource_url(), Discovery::static_file_urls()[ $resource ] );
+
+		Settings::update_security( [ 'dcr' => false ] );
+		$this->assertArrayNotHasKey( 'registration_endpoint', json_decode( Discovery::static_files()[ $server ], true ) );
+	}
+
+	public function test_static_files_with_a_home_path() {
+		$this->set_permalink_structure( '/%postname%/' );
+		update_option( 'home', home_url( '/blog' ) );
+		update_option( 'siteurl', site_url( '/blog' ) );
+
+		$urls = Discovery::static_file_urls();
+		$this->assertSame(
+			[ 'blog/.well-known/oauth-protected-resource/wp-json/md3-wp-mcp/mcp', 'blog/.well-known/oauth-authorization-server/md3-mcp' ],
+			array_keys( $urls )
+		);
+		$this->assertSame( Discovery::protected_resource_url(), $urls['blog/.well-known/oauth-protected-resource/wp-json/md3-wp-mcp/mcp'] );
+		$this->assertSame( home_url( '/.well-known/oauth-authorization-server/md3-mcp' ), $urls['blog/.well-known/oauth-authorization-server/md3-mcp'] );
+		$this->assertSame( array_keys( $urls ), array_keys( Discovery::static_files() ) );
+	}
+
 	public function test_discovery_paths_and_responses() {
 		$home     = untrailingslashit( (string) wp_parse_url( home_url( '/' ), PHP_URL_PATH ) );
 		$resource = (string) wp_parse_url( OAuth::resource_url(), PHP_URL_PATH );

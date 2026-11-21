@@ -85,6 +85,41 @@ final class Discovery {
 	}
 
 	/**
+	 * The two documents as static files, for hosts whose web server never
+	 * passes `/.well-known/` to WordPress. Path relative to the domain's root
+	 * (with the home path) => JSON. Built from the same metadata as the live
+	 * routes; public metadata only.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function static_files(): array {
+		$flags = JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT;
+		$paths = array_keys( self::static_file_urls() );
+
+		return [
+			$paths[0] => wp_json_encode( self::protected_resource_metadata(), $flags ) . "\n",
+			$paths[1] => wp_json_encode( self::authorization_server_metadata(), $flags ) . "\n",
+		];
+	}
+
+	/**
+	 * The URL each static file must open at, keyed like static_files():
+	 * the protected resource document, then the authorization server document.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function static_file_urls(): array {
+		$parts  = wp_parse_url( home_url( '/' ) );
+		$origin = $parts['scheme'] . '://' . $parts['host'] . ( isset( $parts['port'] ) ? ':' . $parts['port'] : '' );
+		$urls   = [];
+
+		foreach ( [ (string) wp_parse_url( self::protected_resource_url(), PHP_URL_PATH ), (string) array_search( self::AUTHORIZATION_SERVER, self::paths(), true ) ] as $path ) {
+			$urls[ ltrim( $path, '/' ) ] = $origin . $path;
+		}
+		return $urls;
+	}
+
+	/**
 	 * The bare protected resource path, served only if nothing else answered
 	 * it first (another plugin may own it).
 	 */

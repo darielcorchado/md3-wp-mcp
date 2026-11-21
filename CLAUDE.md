@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-<!-- synced-with: 4f3b592 -->
+<!-- synced-with: 21eb80e -->
 <!-- Keep in sync with the code: run the sync-claude-md skill (.claude/skills/sync-claude-md). -->
 
 MD3 WP MCP is a WordPress plugin: a content-only MCP server with its own OAuth 2.1 server. AI clients can list, read, draft, edit, publish and trash posts and pages, and nothing else. Author: Dariel Corchado (sole author).
@@ -39,7 +39,8 @@ includes/
   mcp/                  Server (creates the adapter server, transport permission), Error_Handler
   oauth/                league/oauth2-server wiring: Discovery, Registration (DCR), Cimd, Authorize
                         (consent), Token_Endpoint, Bearer_Guard, Keys, Tokens; entities/, repositories/
-  admin/                Settings_Page (tabs in views/), Diagnostics, Profile_Connections
+  admin/                Settings_Page (tabs in views/), Diagnostics (judges discovery documents by content),
+                        Discovery_Files (static discovery files as an in-memory ZIP, admin-only), Profile_Connections
   uploads/              Upload_Links (one-time links, hashed tokens), Upload_Page (/md3-mcp/upload/<token>)
 languages/              .pot, es_ES .po/.mo
 tests/integration/      PHPUnit tests, one file per area; helpers in tests/helpers/class-test-case.php
@@ -65,6 +66,7 @@ docs/                   design.md, implementation-plan.md, development.md
 - Trash only, never a permanent delete. `trash-content` refuses when the site's trash is disabled.
 - Changing live content (published, scheduled, private) also needs `content:publish`.
 - Content created or published over MCP never sends the Brevo web push.
+- The plugin never writes, moves or deletes files on the server. Static discovery files are generated from `Discovery::static_files()` for an administrator to upload.
 
 ## Conventions
 
@@ -94,7 +96,7 @@ These skills commit after every task. In this repo they don't: the Git rules bel
 
 1. **Tests:** `bin/test.sh` must pass with no `[ERROR]` lines. Tests can't see the web server, the page cache or the AI clients, so also:
 2. **Local site:** `bin/sync-to-site.sh <path to the md3digitalsolutions repo>`, then open any wp-admin page at http://localhost:8080 (this runs the schema upgrade). `WP_ENVIRONMENT_TYPE` is `local` there, so plain HTTP is allowed. Connect Claude Code (`claude mcp add --transport http md3 http://localhost:8080/wp-json/md3-wp-mcp/mcp`, then `/mcp`) or the MCP Inspector and call the tools you changed. Check wp-admin and the **Log** tab.
-3. **Staging (GridPane):** sync into the site repo, commit and deploy. Run Diagnostics, then the same calls from claude.ai.
+3. **Staging (GridPane):** sync into the site repo, commit and deploy. Run Diagnostics; if it offers the discovery files, upload the ZIP to the web root and click "Check again". Then the same calls from claude.ai.
 
 The upload link end to end: ask the AI to set an image attached in the chat as the featured image of a draft. Open the link, upload the image and say it's done. The AI calls `get-upload`, then `set-featured-image`. Then check:
 - opening the link again says it was already used;
