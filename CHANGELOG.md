@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Development only, nothing changes for sites:
+  - GitHub runs the tests on every pull request into `stage` and `master`.
+  - The Git flow (feature branches, `stage`, releases, hotfixes) and the branch rules are documented in `docs/development.md`.
+  - `bin/test.sh` now waits until PHP can connect to the database, so the first run after starting Docker no longer fails with `db_connect_fail`.
+
 ## 0.3.0 - 2026-11-18
 
 - When the web server never passes `/.well-known/` to WordPress (as on GridPane), Diagnostics offers the two discovery documents as files to upload: a ZIP with the folder structure, or each file on its own, with instructions. The plugin never writes the files itself; the ZIP is built in memory, and the download is for administrators only.

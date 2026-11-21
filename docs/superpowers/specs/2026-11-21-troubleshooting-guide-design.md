@@ -9,7 +9,7 @@ AI clients can fail to connect because a firewall or the web server blocks the r
 ## Goals
 
 - `docs/troubleshooting.md`: for each issue, the symptom, how to confirm it (log line or `curl`), a copy-paste fix and why the fix is safe. Covers: finding where a request was blocked; `/.well-known/` 404 on GridPane (points to the MD3-32 files); 7G rule 5 (`python-httpx`); 7G rule 10 (`localhost` redirects); pitfalls when writing 7G exceptions; security notes, including the `rest_route=` leftover; a short checklist for Cloudflare, Wordfence, ModSecurity/OWASP CRS and Sucuri; links to the server notes already in the README.
-- The 7G whitelist is the file in use on staging (`/var/www/staging.md3digitalsolutions.com/nginx/whitelist-md3-wp-mcp-7g-context.conf`), presented as an example to adapt to what the logs show.
+- The 7G whitelist is the file in use on staging (`/var/www/<site>/nginx/whitelist-md3-wp-mcp-7g-context.conf`), presented as an example to adapt to what the logs show.
 - Linked from the README and from the Diagnostics section of the Security tab.
 
 ## Non-goals

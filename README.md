@@ -155,7 +155,7 @@ bin/sync-to-site.sh <site-repo>  # try the build on a site
 bin/build-zip.sh                 # release zip
 ```
 
-The full flow (writing tests, trying a change on a site, adding a tool, schema changes, translations and releasing) is in [docs/development.md](docs/development.md). The design is in [docs/design.md](docs/design.md).
+The full flow (the Git flow, writing tests, trying a change on a site, adding a tool, schema changes, translations and releasing) is in [docs/development.md](docs/development.md). The design is in [docs/design.md](docs/design.md).
 
 ## License
 
