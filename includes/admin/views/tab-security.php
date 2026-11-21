@@ -2,7 +2,7 @@
 /**
  * Security tab.
  *
- * @var array{security: array{mcp_user_id: int, dcr: bool, mcp_rate_limit: int}, editors: \WP_User[], diagnostics: ?array<array{check: string, ok: bool, detail: string}>} $view
+ * @var array{security: array{mcp_user_id: int, dcr: bool, mcp_rate_limit: int}, editors: \WP_User[], diagnostics: ?array<array{check: string, ok: bool, detail: string, fix?: string}>, discovery_files: array<string,mixed>} $view
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -85,3 +85,4 @@ $md3_security = $view['security'];
 		</tbody>
 	</table>
 <?php endif; ?>
+<?php require __DIR__ . '/discovery-files.php'; ?>

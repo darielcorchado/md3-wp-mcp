@@ -3,7 +3,7 @@
  * Plugin Name:       MD3 WP MCP
  * Plugin URI:        https://www.md3digitalsolutions.com
  * Description:       A content-only MCP server for WordPress with its own OAuth 2.1 server, so AI assistants can read, draft and publish posts and pages without ever touching code, users or settings.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 6.9
  * Requires PHP:      8.2
  * Author:            Dariel Corchado
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // No direct access.
 }
 
-define( 'MD3_WP_MCP_VERSION', '0.2.0' );
+define( 'MD3_WP_MCP_VERSION', '0.3.0' );
 define( 'MD3_WP_MCP_FILE', __FILE__ );
 define( 'MD3_WP_MCP_DIR', plugin_dir_path( __FILE__ ) );
 

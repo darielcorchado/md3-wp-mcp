@@ -47,16 +47,17 @@ final class Diagnostics {
 	}
 
 	/**
-	 * @return array<array{check: string, ok: bool, detail: string}>
+	 * @return array<array{check: string, ok: bool, detail: string, fix: string}>
 	 */
 	public static function run(): array {
 		$nonce = wp_generate_password( 32, false );
 		set_transient( self::TRANSIENT, $nonce, MINUTE_IN_SECONDS );
+		$oauth_on = OAuth::transport_allowed();
 
 		$rows = [
 			self::check_keys(),
-			self::check_protected_resource(),
-			self::check_authorization_server(),
+			self::check_protected_resource( $oauth_on ),
+			self::check_authorization_server( $oauth_on ),
 			self::check_unauthenticated_mcp(),
 			self::check_authorization_header( $nonce ),
 			self::check_authorize_page(),
@@ -76,35 +77,101 @@ final class Diagnostics {
 		return self::row( $check, true, __( 'Loaded.', 'md3-wp-mcp' ) );
 	}
 
-	private static function check_protected_resource(): array {
-		$check    = __( 'Protected resource metadata is served and not cached', 'md3-wp-mcp' );
-		$response = self::request( 'GET', Discovery::protected_resource_url() );
-		if ( is_string( $response ) ) {
-			return self::row( $check, false, $response );
-		}
-
-		$code = self::status( $response );
-		$type = (string) wp_remote_retrieve_header( $response, 'content-type' );
-		$ctrl = (string) wp_remote_retrieve_header( $response, 'cache-control' );
-		$ok   = 200 === $code && str_contains( $type, 'json' ) && str_contains( $ctrl, 'no-store' );
-
-		/* translators: 1: HTTP status, 2: Content-Type, 3: Cache-Control. */
-		return self::row( $check, $ok, sprintf( __( 'HTTP %1$d, Content-Type "%2$s", Cache-Control "%3$s".', 'md3-wp-mcp' ), $code, $type, $ctrl ) );
+	private static function check_protected_resource( bool $oauth_on ): array {
+		return self::check_document( __( 'Protected resource metadata is served', 'md3-wp-mcp' ), 0, $oauth_on );
 	}
 
-	private static function check_authorization_server(): array {
-		$check = __( 'Authorization server metadata is served', 'md3-wp-mcp' );
-		$path  = (string) array_search( Discovery::AUTHORIZATION_SERVER, Discovery::paths(), true );
-		$url   = self::origin() . $path;
+	private static function check_authorization_server( bool $oauth_on ): array {
+		return self::check_document( __( 'Authorization server metadata is served', 'md3-wp-mcp' ), 1, $oauth_on );
+	}
 
-		$response = self::request( 'GET', $url );
+	/**
+	 * Fetches one of Discovery::static_files() at its URL and judges it.
+	 */
+	private static function check_document( string $check, int $index, bool $oauth_on ): array {
+		$urls  = array_values( Discovery::static_file_urls() );
+		$files = array_values( Discovery::static_files() );
+		return self::judge_document( $check, self::request( 'GET', $urls[ $index ] ), $files[ $index ], $oauth_on );
+	}
+
+	/**
+	 * Judges a discovery document by its content: WordPress serving it, or a
+	 * static file with the same content, both pass whatever the headers. A 404
+	 * offers the static files (`fix` = missing), but only while OAuth is on,
+	 * since the files would otherwise advertise endpoints that don't run;
+	 * different content offers fresh ones (`fix` = stale).
+	 *
+	 * @param array<string,mixed>|string $response wp_remote_request() response, or an error message.
+	 * @param string                     $expected The JSON the plugin expects.
+	 * @return array{check: string, ok: bool, detail: string, fix: string}
+	 */
+	public static function judge_document( string $check, $response, string $expected, bool $oauth_on ): array {
 		if ( is_string( $response ) ) {
 			return self::row( $check, false, $response );
 		}
-		$code = self::status( $response );
 
-		/* translators: %d: HTTP status. */
-		return self::row( $check, 200 === $code, sprintf( __( 'HTTP %d.', 'md3-wp-mcp' ), $code ) );
+		$code = self::status( $response );
+		if ( 404 === $code && ! $oauth_on ) {
+			return self::row( $check, false, __( "HTTP 404: OAuth is off because the site isn't served over HTTPS, so the plugin doesn't serve this document.", 'md3-wp-mcp' ) );
+		}
+		if ( 404 === $code ) {
+			return self::row( $check, false, __( "HTTP 404: the web server doesn't pass this address to WordPress.", 'md3-wp-mcp' ), 'missing' );
+		}
+		if ( 200 !== $code ) {
+			/* translators: %d: HTTP status. */
+			return self::row( $check, false, sprintf( __( 'HTTP %d.', 'md3-wp-mcp' ), $code ) );
+		}
+
+		// An editor may have saved the uploaded file with a byte order mark.
+		$served = json_decode( (string) preg_replace( '/^\xEF\xBB\xBF/', '', (string) wp_remote_retrieve_body( $response ) ), true );
+		if ( ! is_array( $served ) ) {
+			return self::row( $check, false, __( 'HTTP 200, but not a JSON document. Something else answers this address (a cache or a firewall challenge page).', 'md3-wp-mcp' ) );
+		}
+		if ( self::normalize( $served ) !== self::normalize( (array) json_decode( $expected, true ) ) ) {
+			return self::row( $check, false, __( 'HTTP 200, but the content is out of date: the site address, Automatic registration or the plugin changed, the file was edited, or a cache serves an old copy.', 'md3-wp-mcp' ), 'stale' );
+		}
+
+		$type = (string) wp_remote_retrieve_header( $response, 'content-type' );
+		$ctrl = (string) wp_remote_retrieve_header( $response, 'cache-control' );
+		if ( str_contains( $type, 'json' ) && str_contains( $ctrl, 'no-store' ) ) {
+			return self::row( $check, true, __( 'HTTP 200, served by WordPress.', 'md3-wp-mcp' ) );
+		}
+		/* translators: 1: Content-Type, 2: Cache-Control. */
+		return self::row( $check, true, sprintf( __( 'HTTP 200, a static file or cached copy with the expected content (Content-Type "%1$s", Cache-Control "%2$s").', 'md3-wp-mcp' ), $type, $ctrl ) );
+	}
+
+	/**
+	 * What the rows ask for: `stale` if any document is out of date, else
+	 * `missing` if any is missing, else ''.
+	 *
+	 * @param array<array{fix?: string}> $rows run() results.
+	 */
+	public static function fix( array $rows ): string {
+		$fixes = array_column( $rows, 'fix' );
+		foreach ( [ 'stale', 'missing' ] as $fix ) {
+			if ( in_array( $fix, $fixes, true ) ) {
+				return $fix;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Decoded JSON with object keys sorted, so key order doesn't matter but list order does.
+	 *
+	 * @param array<mixed> $value Decoded JSON.
+	 * @return array<mixed>
+	 */
+	private static function normalize( array $value ): array {
+		foreach ( $value as $key => $item ) {
+			if ( is_array( $item ) ) {
+				$value[ $key ] = self::normalize( $item );
+			}
+		}
+		if ( ! array_is_list( $value ) ) {
+			ksort( $value, SORT_STRING );
+		}
+		return $value;
 	}
 
 	private static function check_unauthenticated_mcp(): array {
@@ -193,21 +260,15 @@ final class Diagnostics {
 	}
 
 	/**
-	 * Scheme and host of the home URL, to prefix a path that already contains the home path.
+	 * @param string $fix For the discovery documents: '', 'missing' or 'stale'.
+	 * @return array{check: string, ok: bool, detail: string, fix: string}
 	 */
-	private static function origin(): string {
-		$parts = wp_parse_url( home_url( '/' ) );
-		return $parts['scheme'] . '://' . $parts['host'] . ( isset( $parts['port'] ) ? ':' . $parts['port'] : '' );
-	}
-
-	/**
-	 * @return array{check: string, ok: bool, detail: string}
-	 */
-	private static function row( string $check, bool $ok, string $detail ): array {
+	private static function row( string $check, bool $ok, string $detail, string $fix = '' ): array {
 		return [
 			'check'  => $check,
 			'ok'     => $ok,
 			'detail' => $detail,
+			'fix'    => $fix,
 		];
 	}
 }

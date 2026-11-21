@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 - 2026-11-18
+
+- When the web server never passes `/.well-known/` to WordPress (as on GridPane), Diagnostics offers the two discovery documents as files to upload: a ZIP with the folder structure, or each file on its own, with instructions. The plugin never writes the files itself; the ZIP is built in memory, and the download is for administrators only.
+- The discovery checks now judge each document by its content: a static file with the expected content passes whatever its headers, and one that is out of date (after the site address or Automatic registration changed) is reported with fresh files.
+- Saving the Security tab with a different Automatic registration setting reminds you to download the discovery files again if you serve them from disk.
+
 ## 0.2.0 - 2026-11-18
 
 - New tool `create-upload-link`: a one-time page where the user uploads an image from the browser, so the AI can use images attached in the chat. The link works once, expires after 10 minutes, belongs to the connection that made it, and is stored only as a hash.

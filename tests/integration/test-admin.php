@@ -4,6 +4,7 @@ use MD3\WPMCP\Admin\Profile_Connections;
 use MD3\WPMCP\Admin\Settings_Page;
 use MD3\WPMCP\Audit_Log;
 use MD3\WPMCP\Cleanup;
+use MD3\WPMCP\OAuth\Discovery;
 use MD3\WPMCP\OAuth\Keys;
 use MD3\WPMCP\OAuth\Tokens;
 use MD3\WPMCP\Schema;
@@ -307,17 +308,49 @@ class Test_Admin extends Test_Case {
 		$this->assertNotFalse( has_action( 'md3_wp_mcp_cleanup', [ Cleanup::class, 'run' ] ) );
 	}
 
+	/**
+	 * The content a discovery URL should serve.
+	 */
+	private static function expected_document( string $url ): string {
+		return Discovery::static_files()[ (string) array_search( $url, Discovery::static_file_urls(), true ) ];
+	}
+
+	/**
+	 * Stubs the loopback requests: `$discovery( $url )` answers the two discovery
+	 * documents; the MCP endpoint, the auth echo and the authorize page pass.
+	 */
+	private function stub_loopback( callable $discovery ): void {
+		add_filter(
+			'pre_http_request',
+			static function ( $pre, $args, $url ) use ( $discovery ) {
+				if ( str_contains( $url, '/.well-known/' ) ) {
+					return $discovery( $url );
+				}
+				if ( 'POST' === ( $args['method'] ?? '' ) ) {
+					return [ 'response' => [ 'code' => 401 ], 'headers' => [ 'www-authenticate' => 'Bearer resource_metadata="x"' ], 'body' => '' ];
+				}
+				if ( str_contains( $url, 'diagnostics/auth-echo' ) ) {
+					return [ 'response' => [ 'code' => 200 ], 'headers' => [], 'body' => '{"received":true}' ];
+				}
+				return [ 'response' => [ 'code' => 400 ], 'headers' => [], 'body' => '' ];
+			},
+			10,
+			3
+		);
+	}
+
 	public function test_diagnostics_reports_each_check() {
+		$this->set_permalink_structure( '/%postname%/' );
 		$calls = [];
 		add_filter(
 			'pre_http_request',
 			static function ( $pre, $args, $url ) use ( &$calls ) {
 				$calls[] = [ $args['method'] ?? 'GET', $url ];
 				if ( str_contains( $url, 'oauth-protected-resource' ) ) {
-					return [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'application/json', 'cache-control' => 'no-store' ], 'body' => '{}' ];
+					return [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'application/json', 'cache-control' => 'no-store' ], 'body' => self::expected_document( $url ) ];
 				}
 				if ( str_contains( $url, 'oauth-authorization-server' ) ) {
-					return [ 'response' => [ 'code' => 200 ], 'headers' => [], 'body' => '{}' ];
+					return [ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'application/json', 'cache-control' => 'no-store' ], 'body' => self::expected_document( $url ) ];
 				}
 				if ( 'POST' === ( $args['method'] ?? '' ) ) {
 					return [ 'response' => [ 'code' => 401 ], 'headers' => [ 'www-authenticate' => 'Bearer resource_metadata="x"' ], 'body' => '' ];
@@ -341,6 +374,8 @@ class Test_Admin extends Test_Case {
 		}
 		$this->assertSame( 'OAuth keys load', $rows[0]['check'] );
 		$this->assertSame( [ true, true, true, true, true, false ], array_column( $rows, 'ok' ) );
+		$this->assertSame( [ '', '', '', '', '', '' ], array_column( $rows, 'fix' ) );
+		$this->assertStringContainsString( 'served by WordPress', $rows[1]['detail'] );
 		$this->assertCount( 5, $calls );
 
 		// Unreadable keys fail the first check.
@@ -350,6 +385,196 @@ class Test_Admin extends Test_Case {
 		update_option( Keys::OPT_PRIVATE, $stored, false );
 		$this->assertFalse( $rows[0]['ok'] );
 		$this->assertStringContainsString( 'not a readable RSA key', $rows[0]['detail'] );
+	}
+
+	public function test_discovery_404_offers_the_files() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$this->stub_loopback( static fn () => [ 'response' => [ 'code' => 404 ], 'headers' => [ 'content-type' => 'text/html' ], 'body' => '<html>Not Found</html>' ] );
+
+		$rows = Diagnostics::run();
+
+		$this->assertSame( [ true, false, false, true, true, true ], array_column( $rows, 'ok' ) );
+		$this->assertSame( [ '', 'missing', 'missing', '', '', '' ], array_column( $rows, 'fix' ) );
+		$this->assertStringContainsString( 'HTTP 404', $rows[1]['detail'] );
+		$this->assertSame( 'missing', Diagnostics::fix( $rows ) );
+	}
+
+	public function test_discovery_404_without_oauth_offers_nothing() {
+		$row = Diagnostics::judge_document( 'Check', [ 'response' => [ 'code' => 404 ], 'headers' => [], 'body' => '' ], '{}', false );
+		$this->assertFalse( $row['ok'] );
+		$this->assertSame( '', $row['fix'] );
+		$this->assertStringContainsString( 'HTTPS', $row['detail'] );
+		$this->assertStringNotContainsString( 'web server', $row['detail'] );
+	}
+
+	public function test_static_file_with_other_headers_passes() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$this->stub_loopback(
+			static fn ( $url ) => [
+				'response' => [ 'code' => 200 ],
+				'headers'  => [ 'content-type' => 'application/octet-stream', 'cache-control' => 'public, no-cache' ],
+				'body'     => str_replace( "\n", "\r\n", self::expected_document( $url ) ),
+			]
+		);
+
+		$rows = Diagnostics::run();
+
+		$this->assertSame( [ true, true, true, true, true, true ], array_column( $rows, 'ok' ) );
+		$this->assertStringContainsString( 'static file', $rows[1]['detail'] );
+		$this->assertStringContainsString( 'application/octet-stream', $rows[1]['detail'] );
+		$this->assertSame( '', Diagnostics::fix( $rows ) );
+	}
+
+	public function test_differing_content_is_stale() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$this->stub_loopback(
+			static function ( $url ) {
+				$document = json_decode( self::expected_document( $url ), true );
+				if ( isset( $document['issuer'] ) ) {
+					$document['issuer'] = 'https://old.example.com/md3-mcp';
+				}
+				return [ 'response' => [ 'code' => 200 ], 'headers' => [], 'body' => (string) wp_json_encode( $document ) ];
+			}
+		);
+
+		$rows = Diagnostics::run();
+
+		$this->assertSame( [ true, true, false, true, true, true ], array_column( $rows, 'ok' ) );
+		$this->assertSame( 'stale', $rows[2]['fix'] );
+		$this->assertStringContainsString( 'out of date', $rows[2]['detail'] );
+		$this->assertSame( 'stale', Diagnostics::fix( $rows ) );
+	}
+
+	public function test_non_json_200_and_other_errors_offer_nothing() {
+		$responses = [
+			[ 'response' => [ 'code' => 200 ], 'headers' => [ 'content-type' => 'text/html' ], 'body' => '<html>Checking your browser</html>' ],
+			[ 'response' => [ 'code' => 403 ], 'headers' => [], 'body' => 'Forbidden' ],
+			'cURL error 28: Operation timed out',
+		];
+		foreach ( $responses as $response ) {
+			$row = Diagnostics::judge_document( 'Check', $response, '{"a":1}', true );
+			$this->assertFalse( $row['ok'] );
+			$this->assertSame( '', $row['fix'] );
+		}
+		$this->assertStringContainsString( 'not a JSON document', Diagnostics::judge_document( 'Check', $responses[0], '{"a":1}', true )['detail'] );
+		$this->assertStringContainsString( 'HTTP 403', Diagnostics::judge_document( 'Check', $responses[1], '{"a":1}', true )['detail'] );
+		$this->assertSame( 'cURL error 28: Operation timed out', Diagnostics::judge_document( 'Check', $responses[2], '{"a":1}', true )['detail'] );
+	}
+
+	public function test_a_byte_order_mark_still_matches() {
+		$row = Diagnostics::judge_document( 'Check', [ 'response' => [ 'code' => 200 ], 'headers' => [], 'body' => "\xEF\xBB\xBF{\"a\":1}" ], '{"a":1}', true );
+		$this->assertTrue( $row['ok'] );
+	}
+
+	public function test_stale_detail_names_a_cached_copy() {
+		$row = Diagnostics::judge_document( 'Check', [ 'response' => [ 'code' => 200 ], 'headers' => [], 'body' => '{"a":2}' ], '{"a":1}', true );
+		$this->assertSame( 'stale', $row['fix'] );
+		$this->assertStringContainsString( 'cache', $row['detail'] );
+		$this->assertStringContainsString( 'plugin', $row['detail'] );
+	}
+
+	public function test_no_files_offered_with_plain_permalinks() {
+		$this->set_permalink_structure( '' );
+		$data = Settings_Page::discovery_files_data( [ self::diag_row( false, 'missing' ) ], true );
+		$this->assertFalse( $data['show'] );
+		$this->assertSame( '', $data['show_url'] );
+	}
+
+	public function test_no_files_offered_while_oauth_is_off() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$_GET['md3_static'] = '1';
+		$data               = Settings_Page::discovery_files_data( [ self::diag_row( false, 'missing' ) ], false );
+		unset( $_GET['md3_static'] );
+		$this->assertFalse( $data['show'] );
+		$this->assertSame( '', $data['show_url'] );
+
+		$this->assertTrue( Settings_Page::discovery_files_data( [ self::diag_row( false, 'missing' ) ], true )['show'] );
+	}
+
+	public function test_matching_ignores_key_order_but_not_list_order() {
+		$expected = '{"a":1,"b":["x","y"]}';
+		$ok       = static fn ( string $body ) => Diagnostics::judge_document( 'Check', [ 'response' => [ 'code' => 200 ], 'headers' => [], 'body' => $body ], $expected, true )['ok'];
+		$this->assertTrue( $ok( '{"b":["x","y"],"a":1}' ) );
+		$this->assertFalse( $ok( '{"a":1,"b":["y","x"]}' ) );
+		$this->assertFalse( $ok( '{"a":"1","b":["x","y"]}' ) );
+	}
+
+	/**
+	 * Renders the Security tab with these diagnostics results (null: none yet).
+	 *
+	 * @param array<array<string,mixed>>|null $rows Diagnostics rows.
+	 */
+	private function render_security( ?array $rows ): string {
+		$user = $this->as_admin();
+		if ( null !== $rows ) {
+			set_transient( 'md3_mcp_diag_results_' . $user, $rows, 600 );
+		}
+		ob_start();
+		Settings_Page::render_page( 'security' );
+		return (string) ob_get_clean();
+	}
+
+	private static function diag_row( bool $ok, string $fix = '' ): array {
+		return [ 'check' => 'Check', 'ok' => $ok, 'detail' => 'Detail', 'fix' => $fix ];
+	}
+
+	public function test_files_box_shown_only_when_needed() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$box  = 'id="md3-discovery-files"';
+		$zip  = 'action=md3_mcp_download_discovery&#038;file=zip';
+		$urls = array_values( Discovery::static_file_urls() );
+
+		$html = $this->render_security( null );
+		$this->assertStringNotContainsString( $box, $html );
+		$this->assertStringContainsString( 'md3_static=1', $html );
+
+		$html = $this->render_security( [ self::diag_row( true ), self::diag_row( false, 'missing' ), self::diag_row( false, 'missing' ) ] );
+		$this->assertStringContainsString( $box, $html );
+		$this->assertStringContainsString( $zip, $html );
+		$this->assertStringContainsString( 'file=resource', $html );
+		$this->assertStringContainsString( 'file=server', $html );
+		$this->assertStringContainsString( '_wpnonce=', $html );
+		$this->assertStringContainsString( esc_html( $urls[0] ), $html );
+		$this->assertStringContainsString( esc_html( $urls[1] ), $html );
+		$this->assertStringContainsString( 'Check again', $html );
+		$this->assertStringNotContainsString( 'md3_static=1', $html );
+
+		$passing = [ self::diag_row( true ), self::diag_row( true ), self::diag_row( true ) ];
+		$this->assertStringNotContainsString( $box, $this->render_security( $passing ) );
+
+		$_GET['md3_static'] = '1';
+		$html               = $this->render_security( $passing );
+		unset( $_GET['md3_static'] );
+		$this->assertStringContainsString( $box, $html );
+		$this->assertStringContainsString( $zip, $html );
+	}
+
+	public function test_stale_files_say_so() {
+		$this->set_permalink_structure( '/%postname%/' );
+		$html = $this->render_security( [ self::diag_row( true ), self::diag_row( false, 'stale' ) ] );
+		$this->assertStringContainsString( 'out of date', $html );
+		$this->assertStringContainsString( 'purge', $html );
+		$this->assertStringContainsString( 'after updating the plugin', $html );
+		$this->assertStringContainsString( 'action=md3_mcp_download_discovery', $html );
+	}
+
+	public function test_changing_dcr_warns_about_static_files() {
+		$this->as_admin();
+		Settings::update_security( [ 'dcr' => true ] );
+
+		$location = $this->submit( 'md3_mcp_save_security', [ 'mcp_rate_limit' => '60' ] );
+		$this->assertStringContainsString( 'md3_notice=saved_dcr', $location );
+
+		$location = $this->submit( 'md3_mcp_save_security', [ 'mcp_rate_limit' => '60' ] );
+		$this->assertStringContainsString( 'md3_notice=saved&', $location . '&' );
+
+		$_GET['md3_notice'] = 'saved_dcr';
+		ob_start();
+		Settings_Page::render_page( 'security' );
+		$html = (string) ob_get_clean();
+		unset( $_GET['md3_notice'] );
+		$this->assertStringContainsString( 'notice-warning', $html );
+		$this->assertStringContainsString( 'download them again', $html );
 	}
 
 	public function test_auth_echo_route_compares_the_bearer_to_the_nonce() {
