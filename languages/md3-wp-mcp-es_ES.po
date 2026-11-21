@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MD3 WP MCP 0.3.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/app\n"
-"POT-Creation-Date: 2026-11-18T20:17:46+00:00\n"
+"POT-Creation-Date: 2026-11-21T14:29:03+00:00\n"
 "PO-Revision-Date: 2026-11-18T12:00:00+00:00\n"
 "Last-Translator: Dariel Corchado\n"
 "Language-Team: Spanish (Spain)\n"
@@ -556,39 +556,41 @@ msgstr "No se pudo crear un archivo temporal."
 msgid "Could not write the temporary file."
 msgstr "No se pudo escribir el archivo temporal."
 
-#: includes/admin/class-diagnostics.php:71
+#: includes/admin/class-diagnostics.php:77
 msgid "OAuth keys load"
 msgstr "Las claves OAuth se cargan"
 
-#: includes/admin/class-diagnostics.php:77
+#: includes/admin/class-diagnostics.php:83
 msgid "Loaded."
 msgstr "Cargadas."
 
-#: includes/admin/class-diagnostics.php:81
+#: includes/admin/class-diagnostics.php:87
 msgid "Protected resource metadata is served"
 msgstr "Los metadatos del recurso protegido se sirven"
 
-#: includes/admin/class-diagnostics.php:85
+#: includes/admin/class-diagnostics.php:91
 msgid "Authorization server metadata is served"
 msgstr "Los metadatos del servidor de autorización se sirven"
 
-#: includes/admin/class-diagnostics.php:115
+#: includes/admin/class-diagnostics.php:121
 msgid ""
 "HTTP 404: OAuth is off because the site isn't served over HTTPS, so the "
 "plugin doesn't serve this document."
-msgstr "HTTP 404: OAuth está desactivado porque el sitio no se sirve por HTTPS, así que el plugin no sirve este documento."
+msgstr ""
+"HTTP 404: OAuth está desactivado porque el sitio no se sirve por HTTPS, así "
+"que el plugin no sirve este documento."
 
-#: includes/admin/class-diagnostics.php:118
+#: includes/admin/class-diagnostics.php:124
 msgid "HTTP 404: the web server doesn't pass this address to WordPress."
 msgstr "HTTP 404: el servidor web no pasa esta dirección a WordPress."
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:122
+#: includes/admin/class-diagnostics.php:128
 #, php-format
 msgid "HTTP %d."
 msgstr "HTTP %d."
 
-#: includes/admin/class-diagnostics.php:128
+#: includes/admin/class-diagnostics.php:134
 msgid ""
 "HTTP 200, but not a JSON document. Something else answers this address (a "
 "cache or a firewall challenge page)."
@@ -596,19 +598,22 @@ msgstr ""
 "HTTP 200, pero no es un documento JSON. Otra cosa responde en esta dirección "
 "(una caché o una página de desafío del cortafuegos)."
 
-#: includes/admin/class-diagnostics.php:131
+#: includes/admin/class-diagnostics.php:137
 msgid ""
 "HTTP 200, but the content is out of date: the site address, Automatic "
 "registration or the plugin changed, the file was edited, or a cache serves "
 "an old copy."
-msgstr "HTTP 200, pero el contenido está desactualizado: cambió la dirección del sitio, el registro automático o el plugin, alguien editó el archivo, o una caché sirve una copia antigua."
+msgstr ""
+"HTTP 200, pero el contenido está desactualizado: cambió la dirección del "
+"sitio, el registro automático o el plugin, alguien editó el archivo, o una "
+"caché sirve una copia antigua."
 
-#: includes/admin/class-diagnostics.php:137
+#: includes/admin/class-diagnostics.php:143
 msgid "HTTP 200, served by WordPress."
 msgstr "HTTP 200, servido por WordPress."
 
 #. translators: 1: Content-Type, 2: Cache-Control.
-#: includes/admin/class-diagnostics.php:140
+#: includes/admin/class-diagnostics.php:146
 #, php-format
 msgid ""
 "HTTP 200, a static file or cached copy with the expected content (Content-"
@@ -617,36 +622,36 @@ msgstr ""
 "HTTP 200, un archivo estático o una copia en caché con el contenido esperado "
 "(Content-Type \"%1$s\", Cache-Control \"%2$s\")."
 
-#: includes/admin/class-diagnostics.php:178
+#: includes/admin/class-diagnostics.php:184
 msgid "The MCP endpoint refuses requests without a token"
 msgstr "El endpoint MCP rechaza las solicitudes sin token"
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:196
+#: includes/admin/class-diagnostics.php:202
 #, php-format
 msgid "HTTP %1$d, WWW-Authenticate header: %2$s."
 msgstr "HTTP %1$d, encabezado WWW-Authenticate: %2$s."
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:196
+#: includes/admin/class-diagnostics.php:202
 msgid "yes"
 msgstr "sí"
 
 #. translators: 1: HTTP status, 2: whether a WWW-Authenticate header was sent (yes/no).
-#: includes/admin/class-diagnostics.php:196
+#: includes/admin/class-diagnostics.php:202
 msgid "no"
 msgstr "no"
 
-#: includes/admin/class-diagnostics.php:200
+#: includes/admin/class-diagnostics.php:206
 msgid "The Authorization header reaches PHP"
 msgstr "El encabezado Authorization llega a PHP"
 
-#: includes/admin/class-diagnostics.php:218
+#: includes/admin/class-diagnostics.php:224
 msgid "Received."
 msgstr "Recibido."
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:220
+#: includes/admin/class-diagnostics.php:226
 #, php-format
 msgid ""
 "Not received (HTTP %d). The web server strips the Authorization header; pass "
@@ -655,13 +660,13 @@ msgstr ""
 "No recibido (HTTP %d). El servidor web elimina el encabezado Authorization; "
 "páselo a PHP."
 
-#: includes/admin/class-diagnostics.php:225
+#: includes/admin/class-diagnostics.php:231
 msgid "The authorize page is reachable and not cached or redirected"
 msgstr ""
 "La página de autorización es accesible y no está en caché ni redirigida"
 
 #. translators: %d: HTTP status.
-#: includes/admin/class-diagnostics.php:233
+#: includes/admin/class-diagnostics.php:239
 #, php-format
 msgid "HTTP %d without parameters (400 expected)."
 msgstr "HTTP %d sin parámetros (se esperaba 400)."
@@ -847,7 +852,11 @@ msgid ""
 "The discovery documents your site returns are out of date. If you uploaded "
 "the files, download them again and replace the old ones. If you did not, a "
 "page cache or CDN serves an old copy: purge it and click \"Check again\"."
-msgstr "Los documentos de descubrimiento que devuelve su sitio están desactualizados. Si subió los archivos, descárguelos de nuevo y reemplace los anteriores. Si no, una caché de páginas o una CDN sirve una copia antigua: púrguela y haga clic en \"Comprobar de nuevo\"."
+msgstr ""
+"Los documentos de descubrimiento que devuelve su sitio están "
+"desactualizados. Si subió los archivos, descárguelos de nuevo y reemplace "
+"los anteriores. Si no, una caché de páginas o una CDN sirve una copia "
+"antigua: púrguela y haga clic en \"Comprobar de nuevo\"."
 
 #: includes/admin/views/discovery-files.php:31
 msgid ""
@@ -912,7 +921,11 @@ msgid ""
 "Download them again after changing the site address or Automatic "
 "registration, and after updating the plugin. When you uninstall the plugin, "
 "delete these two files, not the whole %s folder (Let's Encrypt uses it)."
-msgstr "Descárguelos de nuevo después de cambiar la dirección del sitio o el registro automático, y después de actualizar el plugin. Cuando desinstale el plugin, borre estos dos archivos, no toda la carpeta %s (Let's Encrypt la usa)."
+msgstr ""
+"Descárguelos de nuevo después de cambiar la dirección del sitio o el "
+"registro automático, y después de actualizar el plugin. Cuando desinstale el "
+"plugin, borre estos dos archivos, no toda la carpeta %s (Let's Encrypt la "
+"usa)."
 
 #: includes/admin/views/discovery-files.php:99
 msgid "Check again"
@@ -1029,7 +1042,7 @@ msgid "Tool"
 msgstr "Herramienta"
 
 #: includes/admin/views/tab-log.php:23 includes/admin/views/tab-log.php:45
-#: includes/admin/views/tab-security.php:74
+#: includes/admin/views/tab-security.php:93
 msgid "Result"
 msgstr "Resultado"
 
@@ -1132,23 +1145,42 @@ msgstr ""
 "Comprueba que el servidor web y cualquier caché de páginas dejen pasar el "
 "flujo de inicio de sesión. El sitio se solicita a sí mismo."
 
-#: includes/admin/views/tab-security.php:68
+#. translators: 1: link to the troubleshooting guide, 2: link to the developer's contact page.
+#: includes/admin/views/tab-security.php:70
+#, php-format
+msgid ""
+"If every check passes and an AI client still cannot connect, a firewall may "
+"be blocking it before it reaches WordPress. See the %1$s, or %2$s."
+msgstr ""
+"Si todas las comprobaciones pasan y un cliente de IA sigue sin poder "
+"conectarse, puede que un cortafuegos lo bloquee antes de que llegue a "
+"WordPress. Consulte la %1$s o %2$s."
+
+#: includes/admin/views/tab-security.php:71
+msgid "troubleshooting guide"
+msgstr "guía de solución de problemas"
+
+#: includes/admin/views/tab-security.php:72
+msgid "contact the developer"
+msgstr "contacte con el desarrollador"
+
+#: includes/admin/views/tab-security.php:87
 msgid "Run checks"
 msgstr "Ejecutar comprobaciones"
 
-#: includes/admin/views/tab-security.php:73
+#: includes/admin/views/tab-security.php:92
 msgid "Check"
 msgstr "Comprobación"
 
-#: includes/admin/views/tab-security.php:75
+#: includes/admin/views/tab-security.php:94
 msgid "Detail"
 msgstr "Detalle"
 
-#: includes/admin/views/tab-security.php:81
+#: includes/admin/views/tab-security.php:100
 msgid "OK"
 msgstr "Correcto"
 
-#: includes/admin/views/tab-security.php:81
+#: includes/admin/views/tab-security.php:100
 msgid "Failed"
 msgstr "Falló"
 
