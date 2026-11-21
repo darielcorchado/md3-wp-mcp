@@ -1,0 +1,46 @@
+# Runs the PHPUnit suite (bin/test.sh: PHP 8.2 + MySQL 8 in Docker) on every
+# pull request into stage or master. The `tests` job is the required check
+# in the branch rulesets (docs/development.md, "Git flow").
+#
+# Uses `pull_request`, never `pull_request_target`: a fork's code runs with a
+# read-only token and no secrets.
+name: Tests
+
+on:
+  pull_request:
+    branches: [stage, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            vendor
+            tests/wp
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+
+      - run: composer install --no-interaction --no-progress
+
+      - run: bin/test.sh
